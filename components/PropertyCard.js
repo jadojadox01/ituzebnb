@@ -78,7 +78,7 @@ export function PropertyCard({ listing }) {
           </div>
           <p className="text-right">
             <span className="text-lg font-bold">{formatRwf(listing.price)}</span>
-            <span className="text-sm text-muted-foreground">/mo</span>
+            <span className="text-sm text-muted-foreground">/day</span>
           </p>
         </div>
         <Link href={`/houses/${listing.id}`} className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary/20 px-4 text-sm font-bold text-primary transition hover:bg-primary/10">

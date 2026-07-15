@@ -44,13 +44,13 @@ export default async function HouseDetailsPage({ params }) {
                 {listing.address}
               </p>
               <p className="mt-5 max-w-3xl leading-7 text-muted-foreground">
-                A verified rental home with clear monthly pricing, useful amenities, and a simple path to request a booking.
+                A verified rental home with clear daily pricing, useful amenities, and a simple path to request a booking.
               </p>
             </div>
           </div>
 
           <aside className="h-fit rounded-lg border border-border bg-card p-5 shadow-smooth">
-            <p className="text-sm font-bold text-muted-foreground">Monthly rent</p>
+            <p className="text-sm font-bold text-muted-foreground">Daily rate</p>
             <p className="mt-1 text-3xl font-extrabold text-primary">{formatRwf(listing.price)}</p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted p-4">

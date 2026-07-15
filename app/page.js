@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarCheck, Filter, Home, MapPinned, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, CalendarCheck, Coffee, Filter, Home, Leaf, MapPinned, Music, Search, Shadow, ShieldCheck, SlidersHorizontal, Sparkles, Star, Sun } from "lucide-react";
 import { HeroSection } from "@/components/HeroSection";
 import HeroBackground from "@/components/HeroBackground";
 import HeroRoomCarousel from "@/components/HeroRoomCarousel";
@@ -11,6 +11,39 @@ import { listings, stats } from "@/constants/listings";
 
 
 const filters = ["District", "Price", "Bedrooms", "Room Type"];
+
+const benefits = [
+  {
+    title: "Daily breakfast",
+    description: "Start each day with fresh breakfast options included during your stay.",
+    icon: Coffee,
+  },
+  {
+    title: "Entertainment lounge",
+    description: "Relax with music, social seating, and a warm atmosphere after a long day.",
+    icon: Music,
+  },
+  {
+    title: "Fresh garden access",
+    description: "Step into a beautiful natural garden with calm pathways and greenery.",
+    icon: Leaf,
+  },
+  {
+    title: "Balcony comfort",
+    description: "Enjoy fresh air and quiet moments on a private balcony when available.",
+    icon: Sun,
+  },
+  {
+    title: "River view",
+    description: "Choose rooms with calming river views for a peaceful stay.",
+    icon: Sparkles,
+  },
+  {
+    title: "Clean, modern stay",
+    description: "Experience a spotless room with comfortable amenities and friendly service.",
+    icon: Star,
+  },
+];
 
 export default function HomePage() {
   return (
@@ -30,7 +63,7 @@ export default function HomePage() {
               Find the right room in Kigali, faster and with confidence.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)] sm:text-lg">
-              Browse single, double, and twin bed rooms. Compare monthly rent in RWF and book available stays from a clean, mobile-friendly experience.
+              Browse single, double, and twin bed rooms. Compare daily rates in RWF and book available stays from a clean, mobile-friendly experience.
             </p>
 
             <div id="search" className="mt-8 rounded-xl border border-white/30 bg-white/95 p-4 shadow-smooth backdrop-blur-sm sm:p-5">
@@ -123,6 +156,33 @@ export default function HomePage() {
             View all rooms
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
+        </div>
+      </section>
+
+      <section id="benefits" className="border-t border-border bg-background">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary">Benefits of staying at ITUZE BNB</p>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">Stay better with thoughtfully designed guest experiences.</h2>
+            <p className="mt-4 text-base leading-7 text-muted-foreground">
+              Enjoy breakfast, garden views, balcony comfort, and more when you stay at ITUZE BNB.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {benefits.map((benefit) => {
+              const Icon = benefit.icon;
+              return (
+                <div key={benefit.title} className="group rounded-3xl border border-border bg-card p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-smooth">
+                  <div className="inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-secondary text-secondary-foreground shadow-sm transition duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+                    <Icon size={24} aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold tracking-tight text-foreground">{benefit.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{benefit.description}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 

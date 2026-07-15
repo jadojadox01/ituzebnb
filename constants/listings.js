@@ -7,14 +7,13 @@ export const listings = [
     address: "KG 140B St, Kibagabaga",
     type: "Single Room",
     status: "Available",
-    price: 350000,
+    price: 22000,
     bedrooms: 1,
     bathrooms: 1,
     rating: 4.9,
-    image: "/images/single.jpeg",
+    image: "/images/single (2).jpeg",
     images: [
-      "/images/single.jpeg",
-      "/images/single_room.jpeg"
+      "/images/single (2).jpeg"
     ],
     amenities: ["Wi-Fi", "Private bathroom", "Daily cleaning"]
   },
@@ -26,13 +25,13 @@ export const listings = [
     address: "KG 140B St, Kibagabaga",
     type: "Double Room",
     status: "Available",
-    price: 520000,
+    price: 32000,
     bedrooms: 1,
     bathrooms: 1,
     rating: 4.8,
-    image: "/images/double-room.jpeg",
+    image: "/images/double_room.jpeg",
     images: [
-      "/images/double-room.jpeg"
+      "/images/double_room.jpeg"
     ],
     amenities: ["Wi-Fi", "Double bed", "City view"]
   },
@@ -44,14 +43,13 @@ export const listings = [
     address: "KG 140B St, Kibagabaga",
     type: "Twin Bed Room",
     status: "Reserved",
-    price: 480000,
+    price: 28000,
     bedrooms: 1,
     bathrooms: 1,
     rating: 4.7,
-    image: "/images/twin.jpeg",
+    image: "/images/twin_room.jpeg",
     images: [
-      "/images/twin.jpeg",
-      "/images/single_room.jpeg"
+      "/images/twin_room.jpeg"
     ],
     amenities: ["Wi-Fi", "Twin beds", "Quiet street"]
   }
