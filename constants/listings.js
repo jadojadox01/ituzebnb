@@ -1,63 +1,59 @@
 export const listings = [
   {
-    id: "kigali-garden-villa",
-    title: "Kigali Garden Villa",
+    id: "single-room",
+    title: "Single Room",
     district: "Gasabo",
     sector: "Kimironko",
-    type: "Villa",
+    address: "KG 140B St, Kibagabaga",
+    type: "Single Room",
     status: "Available",
-    price: 1500000,
-    bedrooms: 4,
-    bathrooms: 3,
+    price: 350000,
+    bedrooms: 1,
+    bathrooms: 1,
     rating: 4.9,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/single.jpeg",
     images: [
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80"
+      "/images/single.jpeg",
+      "/images/single_room.jpeg"
     ],
-    amenities: ["Garden", "Parking", "Fiber internet"]
+    amenities: ["Wi-Fi", "Private bathroom", "Daily cleaning"]
   },
   {
-    id: "nyarutarama-apartment",
-    title: "Nyarutarama View Apartment",
+    id: "double-room",
+    title: "Double Room",
     district: "Gasabo",
     sector: "Nyarutarama",
-    type: "Apartment",
-    status: "Reserved",
-    price: 1050000,
-    bedrooms: 3,
-    bathrooms: 2,
+    address: "KG 140B St, Kibagabaga",
+    type: "Double Room",
+    status: "Available",
+    price: 520000,
+    bedrooms: 1,
+    bathrooms: 1,
     rating: 4.8,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/double-room.jpeg",
     images: [
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=1400&q=80"
+      "/images/double-room.jpeg"
     ],
-    amenities: ["Balcony", "Security", "City view"]
+    amenities: ["Wi-Fi", "Double bed", "City view"]
   },
   {
-    id: "rebero-family-house",
-    title: "Rebero Family House",
+    id: "twin-bed-room",
+    title: "Twin Bed Room",
     district: "Kicukiro",
     sector: "Gikondo",
-    type: "House",
-    status: "Available",
-    price: 820000,
-    bedrooms: 3,
-    bathrooms: 2,
+    address: "KG 140B St, Kibagabaga",
+    type: "Twin Bed Room",
+    status: "Reserved",
+    price: 480000,
+    bedrooms: 1,
+    bathrooms: 1,
     rating: 4.7,
-    image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/twin.jpeg",
     images: [
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1400&q=80",
-      "https://images.unsplash.com/photo-1600566752447-f4b7d27676de?auto=format&fit=crop&w=1400&q=80"
+      "/images/twin.jpeg",
+      "/images/single_room.jpeg"
     ],
-    amenities: ["Quiet street", "Storage", "Private yard"]
+    amenities: ["Wi-Fi", "Twin beds", "Quiet street"]
   }
 ];
 
@@ -68,7 +64,7 @@ export function formatRwf(amount) {
 }
 
 export const stats = [
-  { label: "Verified homes", value: "280+" },
+  { label: "Verified rooms", value: "280+" },
   { label: "Districts covered", value: "12" },
   { label: "Avg. response", value: "18m" }
 ];

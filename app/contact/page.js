@@ -19,7 +19,7 @@ export default function ContactPage() {
           <div className="mt-8 space-y-3 text-sm">
             <p className="flex items-center gap-3"><MapPin className="text-primary" size={18} aria-hidden="true" /> Kigali, Rwanda</p>
             <p className="flex items-center gap-3"><Phone className="text-primary" size={18} aria-hidden="true" /> +250 788 000 000</p>
-            <p className="flex items-center gap-3"><Mail className="text-primary" size={18} aria-hidden="true" /> hello@ituzebnb.rw</p>
+            <p className="flex items-center gap-3"><Mail className="text-primary" size={18} aria-hidden="true" /> ituzeairbnb@gmail.com</p>
           </div>
         </div>
 

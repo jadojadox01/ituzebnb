@@ -17,7 +17,7 @@ export default function HousesPage() {
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-bold uppercase">Houses</p>
           <h1 className="mt-2 text-4xl font-extrabold tracking-normal">Browse verified rentals</h1>
-          <p className="mt-3 max-w-2xl text-white/80">Filter by location, budget, bedrooms, property type, and availability.</p>
+          <p className="mt-3 max-w-2xl text-white/80">Filter by location, budget, bedrooms, room type, and availability.</p>
         </div>
       </section>
 
@@ -31,9 +31,9 @@ export default function HousesPage() {
             </label>
             <select className="min-h-12 rounded-md border border-input bg-background px-3 text-sm outline-none">
               <option>Any type</option>
-              <option>House</option>
-              <option>Apartment</option>
-              <option>Villa</option>
+              <option>Single Room</option>
+              <option>Double Room</option>
+              <option>Twin Bed Room</option>
             </select>
             <select className="min-h-12 rounded-md border border-input bg-background px-3 text-sm outline-none">
               <option>Available</option>

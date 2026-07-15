@@ -49,7 +49,7 @@ export function PropertyCard({ listing }) {
             </h3>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin size={15} aria-hidden="true" />
-              {listing.sector}, {listing.district}
+              {listing.address}
             </p>
           </div>
           <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-sm font-semibold text-muted-foreground">

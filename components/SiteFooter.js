@@ -40,7 +40,7 @@ export function SiteFooter() {
           <div className="mt-3 space-y-2 text-sm text-white/80">
             <p className="flex items-center gap-2"><MapPin size={16} aria-hidden="true" /> Kigali, Rwanda</p>
             <p className="flex items-center gap-2"><Phone size={16} aria-hidden="true" /> +250 788 000 000</p>
-            <p className="flex items-center gap-2"><Mail size={16} aria-hidden="true" /> hello@ituzebnb.rw</p>
+            <p className="flex items-center gap-2"><Mail size={16} aria-hidden="true" /> ituzeairbnb@gmail.com</p>
           </div>
           <div className="mt-4 flex gap-2">
             {[Facebook, Instagram, Twitter].map((Icon, index) => (

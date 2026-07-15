@@ -27,8 +27,8 @@ export default function AboutPage() {
       <section className="border-y border-border bg-muted/60 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
           {[
-            { icon: CheckCircle2, title: "Verified listings", text: "Homes presented with availability, location, and monthly rent clarity." },
-            { icon: Home, title: "Easy browsing", text: "Compare houses, apartments, and villas without losing the details that matter." },
+            { icon: CheckCircle2, title: "Verified rooms", text: "Rooms presented with availability, location, and monthly rent clarity." },
+            { icon: Home, title: "Easy browsing", text: "Compare single, double, and twin bed rooms without losing the details that matter." },
             { icon: MessageCircle, title: "Simple contact", text: "Ask questions and start a booking conversation from the listing experience." }
           ].map((item) => (
             <article key={item.title} className="rounded-lg border border-border bg-card p-5 shadow-sm">
