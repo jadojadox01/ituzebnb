@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: listing ? `${listing.title} | ITUZE BNB` : "House | ITUZE BNB",
-    description: listing ? `${listing.title} in ${listing.sector}, ${listing.district}.` : "House details on ITUZE BNB."
+    description: listing ? `${listing.title} in ${listing.address}.` : "House details on ITUZE BNB."
   };
 }
 
@@ -41,7 +41,7 @@ export default async function HouseDetailsPage({ params }) {
               <h1 className="mt-2 text-4xl font-extrabold tracking-normal">{listing.title}</h1>
               <p className="mt-3 flex items-center gap-2 text-muted-foreground">
                 <MapPin size={18} aria-hidden="true" />
-                {listing.sector}, {listing.district}, Rwanda
+                {listing.address}
               </p>
               <p className="mt-5 max-w-3xl leading-7 text-muted-foreground">
                 A verified rental home with clear monthly pricing, useful amenities, and a simple path to request a booking.
