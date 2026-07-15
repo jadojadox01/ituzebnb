@@ -22,3 +22,11 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Supabase
+.env.local
+.env
+
+# Database
+*.db
+*.sqlite
