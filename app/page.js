@@ -1,51 +1,53 @@
+"use client";
+
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, CalendarCheck, Coffee, Filter, Home, Leaf, MapPinned, Music, Search, Shadow, ShieldCheck, SlidersHorizontal, Sparkles, Star, Sun } from "lucide-react";
+import { ArrowRight, CalendarCheck, Coffee, Filter, Home, Leaf, MapPinned, Music, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star, Sun } from "lucide-react";
 import { HeroSection } from "@/components/HeroSection";
 import HeroBackground from "@/components/HeroBackground";
 import HeroRoomCarousel from "@/components/HeroRoomCarousel";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useTranslation } from "@/lib/TranslationContext";
 import { listings, stats } from "@/constants/listings";
 
-
-const filters = ["District", "Price", "Bedrooms", "Room Type"];
-
-const benefits = [
-  {
-    title: "Daily breakfast",
-    description: "Start each day with fresh breakfast options included during your stay.",
-    icon: Coffee,
-  },
-  {
-    title: "Entertainment lounge",
-    description: "Relax with music, social seating, and a warm atmosphere after a long day.",
-    icon: Music,
-  },
-  {
-    title: "Fresh garden access",
-    description: "Step into a beautiful natural garden with calm pathways and greenery.",
-    icon: Leaf,
-  },
-  {
-    title: "Balcony comfort",
-    description: "Enjoy fresh air and quiet moments on a private balcony when available.",
-    icon: Sun,
-  },
-  {
-    title: "River view",
-    description: "Choose rooms with calming river views for a peaceful stay.",
-    icon: Sparkles,
-  },
-  {
-    title: "Clean, modern stay",
-    description: "Experience a spotless room with comfortable amenities and friendly service.",
-    icon: Star,
-  },
-];
-
 export default function HomePage() {
+  const { t } = useTranslation();
+
+  const filters = [t("filterDistrict"), t("filterPrice"), t("filterBedrooms"), t("filterRoomType")];
+
+  const benefits = [
+    {
+      title: t("benefitBreakfast"),
+      description: t("benefitBreakfastDesc"),
+      icon: Coffee,
+    },
+    {
+      title: t("benefitLounge"),
+      description: t("benefitLoungeDesc"),
+      icon: Music,
+    },
+    {
+      title: t("benefitGarden"),
+      description: t("benefitGardenDesc"),
+      icon: Leaf,
+    },
+    {
+      title: t("benefitBalcony"),
+      description: t("benefitBalconyDesc"),
+      icon: Sun,
+    },
+    {
+      title: t("benefitRiverView"),
+      description: t("benefitRiverViewDesc"),
+      icon: Sparkles,
+    },
+    {
+      title: t("benefitClean"),
+      description: t("benefitCleanDesc"),
+      icon: Star,
+    },
+  ];
   return (
     <main>
       <SiteHeader />
@@ -57,13 +59,13 @@ export default function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-1.5 text-sm font-bold text-white shadow-sm backdrop-blur-md">
               <Home size={16} aria-hidden="true" />
-              Comfortable rooms with clear RWF pricing
+              {t("heroBadge")}
             </div>
             <h1 className="mt-6 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-normal text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[3.4rem]">
-              Find the right room in Kigali, faster and with confidence.
+              {t("heroTitle")}
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)] sm:text-lg">
-              Browse single, double, and twin bed rooms. Compare daily rates in RWF and book available stays from a clean, mobile-friendly experience.
+              {t("heroSubtitle")}
             </p>
 
             <div id="search" className="mt-8 rounded-xl border border-white/30 bg-white/95 p-4 shadow-smooth backdrop-blur-sm sm:p-5">
@@ -71,24 +73,24 @@ export default function HomePage() {
                 <label className="grid gap-1.5 rounded-md border border-input bg-background px-3 py-2.5">
                   <span className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
                     <Search size={15} aria-hidden="true" />
-                    Search by location
+                    {t("searchByLocation")}
                   </span>
-                  <input className="min-h-8 w-full bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground" placeholder="District, sector, or village" />
+                  <input className="min-h-8 w-full bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground" placeholder={t("searchPlaceholder")} />
                 </label>
                 <label className="grid gap-1.5 rounded-md border border-input bg-background px-3 py-2.5">
                   <span className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
                     <SlidersHorizontal size={15} aria-hidden="true" />
-                    Maximum budget
+                    {t("maxBudget")}
                   </span>
                   <select className="min-h-8 w-full bg-transparent text-sm font-semibold outline-none">
-                    <option>Any budget</option>
-                    <option>Under RWF 500,000</option>
-                    <option>RWF 500,000 - 1,000,000</option>
-                    <option>RWF 1,000,000+</option>
+                    <option>{t("anyBudget")}</option>
+                    <option>{t("under500k")}</option>
+                    <option>{t("between500kAnd1m")}</option>
+                    <option>{t("over1m")}</option>
                   </select>
                 </label>
                 <button className="focus-ring inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-secondary px-6 text-sm font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:brightness-105">
-                  Search
+                  {t("search")}
                   <ArrowRight size={17} aria-hidden="true" />
                 </button>
               </form>
@@ -114,8 +116,8 @@ export default function HomePage() {
                   <CalendarCheck size={20} aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="font-bold">Book available rooms</p>
-                  <p className="text-sm text-muted-foreground">Clear status before you request a visit</p>
+                  <p className="font-bold">{t("bookAvailableRooms")}</p>
+                  <p className="text-sm text-muted-foreground">{t("bookSubtitle")}</p>
                 </div>
               </div>
             </div>
@@ -128,11 +130,11 @@ export default function HomePage() {
           <div>
             <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-normal text-primary">
               <MapPinned size={16} aria-hidden="true" />
-              Featured rooms
+              {t("featuredRooms")}
             </p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-normal sm:text-4xl">A cleaner way to compare rooms.</h2>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-normal sm:text-4xl">{t("featuredTitle")}</h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Three room types to fit your stay — single, double, and twin bed — with transparent pricing and availability.
+              {t("featuredSubtitle")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2" aria-label="Quick filters">
@@ -153,7 +155,7 @@ export default function HomePage() {
 
         <div className="mt-10 text-center">
           <Link href="/houses" className="focus-ring inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-6 py-3 text-sm font-bold text-primary transition hover:bg-primary/10">
-            View all rooms
+            {t("viewAllRooms")}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
@@ -162,10 +164,10 @@ export default function HomePage() {
       <section id="benefits" className="border-t border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary">Benefits of staying at ITUZE BNB</p>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">Stay better with thoughtfully designed guest experiences.</h2>
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary">{t("benefitsLabel")}</p>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">{t("benefitsTitle")}</h2>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Enjoy breakfast, garden views, balcony comfort, and more when you stay at ITUZE BNB.
+              {t("benefitsSubtitle")}
             </p>
           </div>
 
@@ -189,20 +191,20 @@ export default function HomePage() {
       <section className="border-t border-border bg-card">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-normal">Ready to book your stay?</h2>
+            <h2 className="text-3xl font-extrabold tracking-normal">{t("ctaTitle")}</h2>
             <p className="mt-3 leading-7 text-muted-foreground">
-              Create an account to save rooms, request bookings, and keep your rental search organized.
+              {t("ctaSubtitle")}
             </p>
             <Link href="/register" className="focus-ring mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5">
-              Create account
+              {t("ctaButton")}
               <ArrowRight size={17} aria-hidden="true" />
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              "Save favorite rooms",
-              "Request a booking",
-              "Contact us directly"
+              t("ctaSaveRooms"),
+              t("ctaRequestBooking"),
+              t("ctaContact")
             ].map((item) => (
               <div key={item} className="rounded-lg border border-border bg-background p-4 transition hover:border-primary/30 hover:shadow-sm">
                 <ShieldCheck className="text-primary" size={20} aria-hidden="true" />

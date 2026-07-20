@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { Home, Menu, UserPlus, X } from "lucide-react";
 import { useState } from "react";
-
-const navItems = [
-  { label: "Home", href: "/" },
-  { label: "Book Room", href: "/houses" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" }
-];
+import { useTranslation } from "@/lib/TranslationContext";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const navItems = [
+    { label: t("navHome"), href: "/" },
+    { label: t("navBookRoom"), href: "/houses" },
+    { label: t("navAbout"), href: "/about" },
+    { label: t("navContact"), href: "/contact" }
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-primary/20 bg-white/95 backdrop-blur-xl">
@@ -21,7 +24,7 @@ export function SiteHeader() {
           <span className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground shadow-sm">
             <Home size={19} aria-hidden="true" />
           </span>
-          <span className="text-lg font-extrabold tracking-normal text-primary sm:text-xl">ITUZE BNB</span>
+          <span className="text-lg font-extrabold tracking-normal text-primary sm:text-xl">{t("siteName")}</span>
         </Link>
 
         <nav aria-label="Main navigation" className="hidden items-center gap-7 md:flex">
@@ -33,12 +36,13 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitch />
           <Link href="/login" className="focus-ring hidden rounded-md px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/10 sm:inline-flex">
-            Sign In
+            {t("signIn")}
           </Link>
           <Link href="/register" className="focus-ring hidden items-center gap-2 rounded-md bg-secondary px-4 py-2 text-sm font-extrabold text-secondary-foreground shadow-sm transition hover:-translate-y-0.5 hover:brightness-105 sm:inline-flex">
             <UserPlus size={16} aria-hidden="true" />
-            Create Account
+            {t("createAccount")}
           </Link>
           <button
             type="button"
@@ -59,11 +63,11 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link href="/login" className="focus-ring rounded-md px-3 py-3 text-sm font-bold text-foreground hover:bg-primary/10 hover:text-primary" onClick={() => setIsOpen(false)}>
-            Sign In
+            {t("signIn")}
           </Link>
           <Link href="/register" className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-secondary px-3 py-3 text-sm font-extrabold text-secondary-foreground" onClick={() => setIsOpen(false)}>
             <UserPlus size={16} aria-hidden="true" />
-            Create Account
+            {t("createAccount")}
           </Link>
         </nav>
       ) : null}

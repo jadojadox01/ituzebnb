@@ -1,23 +1,23 @@
+"use client";
+
 import { Filter, Search } from "lucide-react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useTranslation } from "@/lib/TranslationContext";
 import { listings } from "@/constants/listings";
 
-export const metadata = {
-  title: "Houses | ITUZE BNB",
-  description: "Browse available rental houses in Rwanda with RWF pricing."
-};
-
 export default function HousesPage() {
+  const { t } = useTranslation();
+
   return (
     <main>
       <SiteHeader />
       <section className="border-b border-primary/20 bg-primary px-4 py-12 text-primary-foreground sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-bold uppercase">Houses</p>
-          <h1 className="mt-2 text-4xl font-extrabold tracking-normal">Browse verified rentals</h1>
-          <p className="mt-3 max-w-2xl text-white/80">Filter by location, budget, bedrooms, room type, and availability.</p>
+          <p className="text-sm font-bold uppercase">{t("navHouses")}</p>
+          <h1 className="mt-2 text-4xl font-extrabold tracking-normal">{t("housesTitle")}</h1>
+          <p className="mt-3 max-w-2xl text-white/80">{t("housesDescription")}</p>
         </div>
       </section>
 
@@ -26,11 +26,11 @@ export default function HousesPage() {
           <form className="grid gap-3 md:grid-cols-[1fr_180px_180px_auto]" aria-label="Filter houses">
             <label className="flex min-h-12 items-center gap-3 rounded-md border border-input bg-background px-3">
               <Search size={18} className="text-muted-foreground" aria-hidden="true" />
-              <span className="sr-only">Search location</span>
-              <input className="w-full bg-transparent text-sm outline-none" placeholder="District, sector, village" />
+              <span className="sr-only">{t("searchByLocation")}</span>
+              <input className="w-full bg-transparent text-sm outline-none" placeholder={t("searchPlaceholder")} />
             </label>
             <select className="min-h-12 rounded-md border border-input bg-background px-3 text-sm outline-none">
-              <option>Any type</option>
+              <option>{t("anyBudget")}</option>
               <option>Single Room</option>
               <option>Double Room</option>
               <option>Twin Bed Room</option>
@@ -42,7 +42,7 @@ export default function HousesPage() {
             </select>
             <button className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-secondary px-5 text-sm font-extrabold text-secondary-foreground">
               <Filter size={16} aria-hidden="true" />
-              Filter
+              {t("filterDistrict")}
             </button>
           </form>
         </div>
