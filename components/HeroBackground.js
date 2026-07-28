@@ -1,49 +1,55 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { collectHeroImages } from "@/lib/roomUtils";
 
 export default function HeroBackground() {
+  const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const backgroundImages = [
-    '/images/background1.jpeg',
-    '/images/background2.jpeg',
-    '/images/background3.jpeg',
-    '/images/background4.jpeg',
-  ];
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/hero-ads").then((r) => r.json()),
+      fetch("/api/rooms").then((r) => r.json()),
+    ]).then(([adsData, roomsData]) => {
+      const heroImages = collectHeroImages(roomsData.rooms || [], adsData.ads || []);
+      setImages(heroImages);
+    });
+  }, []);
 
   useEffect(() => {
+    if (images.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
-    }, 5000); // Change image every 5 seconds
-
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 6000);
     return () => clearInterval(interval);
-  }, [backgroundImages.length]);
+  }, [images.length]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Background images carousel */}
-      {backgroundImages.map((image, index) => (
-        <div
-          key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <Image
-            src={image}
-            alt={`Background ${index + 1}`}
-            fill
-            priority={index === 0}
-            className="object-cover"
-            quality={90}
-          />
-        </div>
-      ))}
-
-      {/* Dark overlay for better text visibility */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/50" />
+      {images.length > 0 ? (
+        images.map((image, index) => (
+          <div
+            key={`${image}-${index}`}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === currentImageIndex ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <Image
+              src={image}
+              alt=""
+              fill
+              priority={index === 0}
+              className="object-cover"
+              quality={90}
+            />
+          </div>
+        ))
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary/80" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0f2f28]/88 via-[#0f2f28]/62 to-[#0f2f28]/48" />
     </div>
   );
 }

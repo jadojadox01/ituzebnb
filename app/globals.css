@@ -3,39 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 40% 98%;
-  --foreground: 218 42% 11%;
+  --background: 38 33% 97%;
+  --foreground: 160 28% 14%;
   --card: 0 0% 100%;
-  --card-foreground: 218 42% 11%;
-  --primary: 214 100% 34%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 47 100% 57%;
-  --secondary-foreground: 218 48% 13%;
-  --muted: 214 32% 94%;
-  --muted-foreground: 216 18% 38%;
-  --accent: 202 100% 44%;
+  --card-foreground: 160 28% 14%;
+  --primary: 158 42% 24%;
+  --primary-foreground: 42 40% 96%;
+  --secondary: 36 78% 55%;
+  --secondary-foreground: 160 30% 12%;
+  --muted: 38 24% 92%;
+  --muted-foreground: 160 10% 38%;
+  --accent: 158 32% 36%;
   --accent-foreground: 0 0% 100%;
-  --border: 214 24% 88%;
-  --input: 214 24% 88%;
-  --ring: 214 100% 34%;
+  --border: 38 18% 86%;
+  --input: 38 18% 86%;
+  --ring: 158 42% 24%;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-width: 0;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(255, 194, 32, 0.14), transparent 30rem),
+    radial-gradient(circle at top right, hsl(36 78% 55% / 0.08), transparent 28rem),
+    radial-gradient(circle at bottom left, hsl(158 42% 24% / 0.06), transparent 24rem),
     hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), Georgia, serif;
+  overflow-wrap: anywhere;
 }
 
 a {
@@ -48,11 +61,32 @@ input,
 select,
 textarea {
   font: inherit;
+  max-width: 100%;
 }
 
-img {
+img,
+video,
+svg {
   display: block;
   max-width: 100%;
+  height: auto;
+}
+
+/* Comfortable tap targets on touch devices */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 2.75rem;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: auto;
+  }
 }
 
 .focus-ring {
@@ -61,4 +95,27 @@ img {
 
 .focus-ring:focus-visible {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.28);
+}
+
+.glass-panel {
+  background: hsl(var(--card) / 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border));
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Prevent long unbroken strings from blowing out layouts */
+.break-safe {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Home, UserPlus } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -8,11 +10,47 @@ import { useTranslation } from "@/lib/TranslationContext";
 
 export default function RegisterPage() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", role: "tenant" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loginHref, setLoginHref] = useState("/login");
 
-  const roles = [
-    { value: "tenant", label: t("registerRoleTenant"), description: t("registerRoleTenantDesc") },
-    { value: "landlord", label: t("registerRoleLandlord"), description: t("registerRoleLandlordDesc") }
-  ];
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next) {
+      setLoginHref(`/login?next=${encodeURIComponent(next)}`);
+    }
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, email: form.email, password: form.password, phone: form.phone })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || t("registrationFailed"));
+        return;
+      }
+
+      const next = new URLSearchParams(window.location.search).get("next");
+      const safeNext =
+        next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+      router.push(safeNext || "/dashboard");
+    } catch (err) {
+      setError(t("bookingErrorGeneric"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main>
@@ -24,45 +62,39 @@ export default function RegisterPage() {
           <p className="mt-4 leading-7 text-white/80">{t("registerSubtitle")}</p>
         </div>
 
-        <form className="rounded-lg border border-border bg-card p-6 shadow-smooth" aria-label={t("registerTitle")}>
+        <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-card p-6 shadow-smooth" aria-label={t("registerTitle")}>
+          {error && (
+            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600">{error}</div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm font-bold">
               {t("registerName")}
-              <input className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderName")} />
+              <input className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderName")} value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
             </label>
             <label className="grid gap-2 text-sm font-bold">
               {t("registerPhone")}
-              <input className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderPhone")} />
+              <input className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderPhone")} value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
             </label>
           </div>
           <label className="mt-4 grid gap-2 text-sm font-bold">
             {t("registerEmail")}
-            <input type="email" className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderEmail")} />
+            <input type="email" className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderEmail")} value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
           </label>
           <label className="mt-4 grid gap-2 text-sm font-bold">
             {t("registerPassword")}
-            <input type="password" className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderPassword")} />
+            <input type="password" className="min-h-12 rounded-md border border-input bg-background px-3 font-normal outline-none focus:border-primary" placeholder={t("registerPlaceholderPassword")} value={form.password} onChange={e => setForm({...form, password: e.target.value})} required minLength={6} />
           </label>
 
-          <fieldset className="mt-5">
-            <legend className="text-sm font-bold">{t("registerAccountType")}</legend>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {roles.map((role) => (
-                <label key={role.value} className="cursor-pointer rounded-lg border border-border bg-background p-4 transition has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                  <input type="radio" name="role" value={role.value} defaultChecked={role.value === "tenant"} className="accent-primary" />
-                  <span className="mt-3 block font-extrabold">{role.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-muted-foreground">{role.description}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <button className="focus-ring mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary px-5 text-sm font-extrabold text-secondary-foreground">
+          <button type="submit" disabled={loading} className="focus-ring mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary px-5 text-sm font-extrabold text-secondary-foreground disabled:opacity-50">
             <UserPlus size={16} aria-hidden="true" />
-            {t("registerButton")}
+            {loading ? t("creatingAccount") : t("registerButton")}
           </button>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            {t("registerHasAccount")} <Link href="/login" className="font-bold text-primary">{t("signIn")}</Link>
+            {t("registerHasAccount")}{" "}
+            <Link href={loginHref} className="font-bold text-primary">
+              {t("signIn")}
+            </Link>
           </p>
         </form>
       </section>

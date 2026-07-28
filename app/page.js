@@ -1,220 +1,179 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, Coffee, Filter, Home, Leaf, MapPinned, Music, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star, Sun } from "lucide-react";
-import { HeroSection } from "@/components/HeroSection";
-import HeroBackground from "@/components/HeroBackground";
-import HeroRoomCarousel from "@/components/HeroRoomCarousel";
+import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  BedDouble,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  Wifi,
+} from "lucide-react";
+import HomeHero from "@/components/HomeHero";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { formatRwf, isRoomBookable, normalizeRoomForCard } from "@/lib/roomUtils";
+import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
+import { localizedSetting } from "@/lib/i18n";
 import { useTranslation } from "@/lib/TranslationContext";
-import { listings, stats } from "@/constants/listings";
 
 export default function HomePage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const [rooms, setRooms] = useState([]);
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const filters = [t("filterDistrict"), t("filterPrice"), t("filterBedrooms"), t("filterRoomType")];
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/rooms").then((r) => r.json()),
+      fetch("/api/settings").then((r) => r.json()),
+    ])
+      .then(([roomsData, settingsData]) => {
+        if (roomsData.rooms) setRooms(roomsData.rooms);
+        if (settingsData.settings) setSettings(settingsData.settings);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  const benefits = [
-    {
-      title: t("benefitBreakfast"),
-      description: t("benefitBreakfastDesc"),
-      icon: Coffee,
-    },
-    {
-      title: t("benefitLounge"),
-      description: t("benefitLoungeDesc"),
-      icon: Music,
-    },
-    {
-      title: t("benefitGarden"),
-      description: t("benefitGardenDesc"),
-      icon: Leaf,
-    },
-    {
-      title: t("benefitBalcony"),
-      description: t("benefitBalconyDesc"),
-      icon: Sun,
-    },
-    {
-      title: t("benefitRiverView"),
-      description: t("benefitRiverViewDesc"),
-      icon: Sparkles,
-    },
-    {
-      title: t("benefitClean"),
-      description: t("benefitCleanDesc"),
-      icon: Star,
-    },
+  const availableRooms = rooms.filter((r) => isRoomBookable(r.status));
+  const featuredRooms = availableRooms.slice(0, 6);
+  const startingPrice = availableRooms.length
+    ? Math.min(...availableRooms.map((r) => r.price_daily || 0))
+    : null;
+
+  const siteName = settingValue(settings, "site_name") || DEFAULT_SITE_NAME;
+  const siteDescription = localizedSetting(settings, "site_description", language, t);
+  const roomsSectionSubtitle = localizedSetting(settings, "rooms_section_subtitle", language, t);
+  const aboutSectionTitle = localizedSetting(settings, "about_section_title", language, t);
+  const guestsExpectText = localizedSetting(settings, "guests_expect_text", language, t);
+  const ctaTitle = localizedSetting(settings, "cta_title", language, t);
+  const ctaSubtitle = localizedSetting(settings, "cta_subtitle", language, t);
+  const aboutText = localizedSetting(settings, "about_text", language, t);
+  const mission = localizedSetting(settings, "mission", language, t);
+  const vision = localizedSetting(settings, "vision", language, t);
+
+  const steps = [
+    t("homeStepPickRoom"),
+    t("homeStepChooseDates"),
+    t("homeStepPayMomo"),
   ];
+
   return (
     <main>
       <SiteHeader />
 
-      <section className="relative overflow-hidden border-b border-primary/20">
-        <HeroBackground />
-        <div className="absolute inset-x-0 top-0 z-10 h-2 bg-secondary" aria-hidden="true" />
-        <div className="relative z-10 mx-auto grid min-h-[calc(100vh-4.25rem)] max-w-7xl items-center gap-10 px-4 py-12 pb-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-1.5 text-sm font-bold text-white shadow-sm backdrop-blur-md">
-              <Home size={16} aria-hidden="true" />
-              {t("heroBadge")}
-            </div>
-            <h1 className="mt-6 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-normal text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[3.4rem]">
-              {t("heroTitle")}
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)] sm:text-lg">
-              {t("heroSubtitle")}
+      <HomeHero
+        settings={settings}
+        rooms={rooms}
+        availableCount={availableRooms.length}
+        totalCount={rooms.length}
+        startingPrice={startingPrice}
+      />
+
+      <section id="rooms" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-accent">
+              <MapPin size={16} aria-hidden="true" />
+              {t("homeAvailableNow")}
             </p>
+            <h2 className="mt-2 text-2xl font-bold break-safe sm:text-4xl">{t("homeRoomsAt", { name: siteName })}</h2>
+            <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">{roomsSectionSubtitle}</p>
+          </div>
+          <Link
+            href="/houses"
+            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/20 px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/5 sm:w-auto"
+          >
+            {t("homeViewAllRooms")}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
 
-            <div id="search" className="mt-8 rounded-xl border border-white/30 bg-white/95 p-4 shadow-smooth backdrop-blur-sm sm:p-5">
-              <form className="grid gap-3 lg:grid-cols-[1.25fr_0.95fr_auto]" aria-label="Search rooms">
-                <label className="grid gap-1.5 rounded-md border border-input bg-background px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
-                    <Search size={15} aria-hidden="true" />
-                    {t("searchByLocation")}
-                  </span>
-                  <input className="min-h-8 w-full bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground" placeholder={t("searchPlaceholder")} />
-                </label>
-                <label className="grid gap-1.5 rounded-md border border-input bg-background px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
-                    <SlidersHorizontal size={15} aria-hidden="true" />
-                    {t("maxBudget")}
-                  </span>
-                  <select className="min-h-8 w-full bg-transparent text-sm font-semibold outline-none">
-                    <option>{t("anyBudget")}</option>
-                    <option>{t("under500k")}</option>
-                    <option>{t("between500kAnd1m")}</option>
-                    <option>{t("over1m")}</option>
-                  </select>
-                </label>
-                <button className="focus-ring inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-secondary px-6 text-sm font-extrabold text-secondary-foreground transition hover:-translate-y-0.5 hover:brightness-105">
-                  {t("search")}
-                  <ArrowRight size={17} aria-hidden="true" />
-                </button>
-              </form>
+        {loading ? (
+          <div className="mt-10 flex min-h-[240px] items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        ) : featuredRooms.length === 0 ? (
+          <div className="mt-10 rounded-3xl border border-dashed border-border bg-card p-12 text-center">
+            <BedDouble className="mx-auto text-muted-foreground/40" size={48} />
+            <h3 className="mt-4 text-xl font-semibold">{t("homeNoRoomsTitle")}</h3>
+            <p className="mt-2 text-muted-foreground">{t("homeNoRoomsText")}</p>
+            <Link href="/admin/rooms" className="focus-ring mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+              {t("homeManageRooms")}
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {featuredRooms.map((room) => (
+              <PropertyCard key={room.id} listing={normalizeRoomForCard(room)} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {aboutText || mission ? (
+        <section className="border-y border-border bg-card/60">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wider text-accent">{t("homeAboutBnb")}</p>
+              <h2 className="mt-3 text-3xl font-bold">{aboutSectionTitle}</h2>
+              <p className="mt-4 leading-7 text-muted-foreground">{aboutText || siteDescription}</p>
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {mission ? (
+                <div className="rounded-2xl border border-border bg-background p-5">
+                  <ShieldCheck className="text-primary" size={22} />
+                  <h3 className="mt-3 font-semibold">{t("homeOurMission")}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{mission}</p>
+                </div>
+              ) : null}
+              {vision ? (
+                <div className="rounded-2xl border border-border bg-background p-5">
+                  <Sparkles className="text-secondary" size={22} />
+                  <h3 className="mt-3 font-semibold">{t("homeOurVision")}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{vision}</p>
+                </div>
+              ) : null}
+              <div className="rounded-2xl border border-border bg-background p-5 sm:col-span-2">
+                <Wifi className="text-accent" size={22} />
+                <h3 className="mt-3 font-semibold">{t("homeGuestsExpect")}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{guestsExpectText}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
-            <div className="mt-6 grid max-w-xl grid-cols-3 overflow-hidden rounded-xl border border-white/30 bg-white/10 shadow-sm backdrop-blur-md">
-              {stats.map((stat) => (
-                <div key={stat.label} className="border-r border-white/20 p-3 last:border-r-0 sm:p-4">
-                  <p className="text-xl font-extrabold text-white sm:text-2xl">{stat.value}</p>
-                  <p className="mt-1 text-xs font-semibold text-white/75 sm:text-sm">{stat.label}</p>
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+        <div className="overflow-hidden rounded-2xl bg-primary px-4 py-8 text-primary-foreground sm:rounded-3xl sm:px-10 sm:py-12">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <h2 className="text-2xl font-bold sm:text-4xl">{ctaTitle}</h2>
+              <p className="mt-3 max-w-xl text-sm text-primary-foreground/85 sm:text-base">{ctaSubtitle}</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link href="/houses" className="focus-ring inline-flex min-h-12 items-center justify-center rounded-full bg-secondary px-6 py-3 text-sm font-bold text-secondary-foreground">
+                  {t("homeCheckAvailability")}
+                </Link>
+                <Link href="/login" className="focus-ring inline-flex min-h-12 items-center justify-center rounded-full border border-white/25 px-6 py-3 text-sm font-bold text-white">
+                  {t("signIn")}
+                </Link>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {steps.map((step, i) => (
+                <div key={step} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                  <p className="text-xs font-bold uppercase tracking-wider text-secondary">{t("homeStepLabel", { n: i + 1 })}</p>
+                  <p className="mt-2 font-semibold">{step}</p>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="relative rounded-xl bg-white/95 p-3 shadow-smooth">
-            <div className="overflow-hidden rounded-lg border border-border bg-card aspect-[4/3] sm:aspect-[5/4] lg:aspect-[5/6]">
-              <HeroRoomCarousel />
-            </div>
-            <div className="absolute -bottom-5 left-4 right-4 rounded-lg border border-border bg-white p-4 shadow-smooth sm:left-8 sm:right-auto sm:w-80">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-md bg-primary text-primary-foreground">
-                  <CalendarCheck size={20} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-bold">{t("bookAvailableRooms")}</p>
-                  <p className="text-sm text-muted-foreground">{t("bookSubtitle")}</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section id="houses" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-normal text-primary">
-              <MapPinned size={16} aria-hidden="true" />
-              {t("featuredRooms")}
-            </p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-normal sm:text-4xl">{t("featuredTitle")}</h2>
-            <p className="mt-3 max-w-2xl text-muted-foreground">
-              {t("featuredSubtitle")}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2" aria-label="Quick filters">
-            {filters.map((filter) => (
-              <button key={filter} className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary">
-                <Filter size={15} aria-hidden="true" />
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing) => (
-            <PropertyCard key={listing.id} listing={listing} />
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Link href="/houses" className="focus-ring inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-6 py-3 text-sm font-bold text-primary transition hover:bg-primary/10">
-            {t("viewAllRooms")}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
-
-      <section id="benefits" className="border-t border-border bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary">{t("benefitsLabel")}</p>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">{t("benefitsTitle")}</h2>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              {t("benefitsSubtitle")}
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {benefits.map((benefit) => {
-              const Icon = benefit.icon;
-              return (
-                <div key={benefit.title} className="group rounded-3xl border border-border bg-card p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-smooth">
-                  <div className="inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-secondary text-secondary-foreground shadow-sm transition duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
-                    <Icon size={24} aria-hidden="true" />
-                  </div>
-                  <h3 className="mt-6 text-xl font-semibold tracking-tight text-foreground">{benefit.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{benefit.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-card">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          <div>
-            <h2 className="text-3xl font-extrabold tracking-normal">{t("ctaTitle")}</h2>
-            <p className="mt-3 leading-7 text-muted-foreground">
-              {t("ctaSubtitle")}
-            </p>
-            <Link href="/register" className="focus-ring mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:-translate-y-0.5">
-              {t("ctaButton")}
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              t("ctaSaveRooms"),
-              t("ctaRequestBooking"),
-              t("ctaContact")
-            ].map((item) => (
-              <div key={item} className="rounded-lg border border-border bg-background p-4 transition hover:border-primary/30 hover:shadow-sm">
-                <ShieldCheck className="text-primary" size={20} aria-hidden="true" />
-                <p className="mt-3 font-semibold">{item}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <SiteFooter />
+      <SiteFooter settings={settings} />
     </main>
   );
 }

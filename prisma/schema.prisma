@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  password   String
+  phone      String    @default("")
+  role       String    @default("client")
+  created_at DateTime  @default(now())
+  bookings   Booking[]
+}
+
+model Room {
+  id           Int       @id @default(autoincrement())
+  title        String
+  room_type    String
+  price_daily  Float
+  price_monthly Float   @default(0)
+  currency     String    @default("RWF")
+  status       String    @default("available")
+  description  String    @default("")
+  beds         Int       @default(1)
+  bathrooms    Int       @default(1)
+  location     String    @default("")
+  capacity     Int       @default(1)
+  amenities    String    @default("")
+  images       String    @default("")
+  video_url    String    @default("")
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  bookings     Booking[]
+}
+
+model Booking {
+  id               Int      @id @default(autoincrement())
+  booking_id       String   @unique
+  user_id          Int
+  room_id          Int
+  check_in         String
+  check_out        String
+  total_amount     Float
+  status           String   @default("pending")
+  payment_status   String   @default("unpaid")
+  payment_method   String   @default("")
+  payment_details  String   @default("")
+  guests           Int      @default(1)
+  special_requests String   @default("")
+  created_at       DateTime @default(now())
+  user             User     @relation(fields: [user_id], references: [id])
+  room             Room     @relation(fields: [room_id], references: [id])
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model HeroAd {
+  id         Int      @id @default(autoincrement())
+  title      String   @default("")
+  subtitle   String   @default("")
+  image      String   @default("")
+  link       String   @default("")
+  active     Int      @default(1)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+}
+
+model ContactMessage {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String
+  phone      String   @default("")
+  message    String
+  status     String   @default("new")
+  created_at DateTime @default(now())
+}
+
+model PaymentTransaction {
+  id                     Int          @id @default(autoincrement())
+  order_id               String
+  request_transaction_id String       @unique
+  intouch_transaction_id String       @default("")
+  amount                 Float
+  phone_number           String
+  status                 String       @default("PENDING")
+  provider               String       @default("")
+  response_code          String       @default("")
+  message                String       @default("")
+  created_at             DateTime     @default(now())
+  updated_at             DateTime     @updatedAt
+  logs                   PaymentLog[]
+}
+
+model PaymentLog {
+  id                     Int      @id @default(autoincrement())
+  payment_transaction_id Int?
+  event                  String
+  request_payload        String   @default("")
+  response_payload       String   @default("")
+  status                 String   @default("")
+  error_message          String   @default("")
+  created_at             DateTime @default(now())
+  transaction            PaymentTransaction? @relation(fields: [payment_transaction_id], references: [id])
+}
