@@ -149,6 +149,20 @@ export default function ContactPage() {
           )}
         </form>
       </section>
+      <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-xl border border-border shadow-sm">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15959.273281372596!2d-0.010299682617187503!3d0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca75e3d90a485%3A0xbfbcc110d4a8d01d!2sITUZE%20B%26B!5e0!3m2!1sen!2srw!4v1785316119063!5m2!1sen!2srw"
+            width="100%"
+            height="420"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            title="ITUZE B&B location"
+          />
+        </div>
+      </section>
       <SiteFooter settings={settings} />
     </main>
   );
