@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { seedDatabase } from "@/lib/seed";
 import { getAuth, requireAdmin } from "@/lib/auth";
-import { isRoomBookable, releaseStaleRoomReservation } from "@/lib/roomAvailability";
+import { isRoomBookable } from "@/lib/roomAvailability";
 import { sanitizeRoomData } from "@/lib/sanitizeRoomData";
 
 function errorStatus(error) {
@@ -23,14 +23,14 @@ export async function GET() {
     const isAdmin = auth?.role === "admin";
 
     const rooms = await prisma.room.findMany({ orderBy: { created_at: "desc" } });
-    const refreshed = await Promise.all(
-      rooms.map((room) => releaseStaleRoomReservation(room.id))
-    );
 
-    const visible = isAdmin
-      ? refreshed.filter(Boolean)
-      : refreshed.filter((room) => room && isRoomBookable(room.status));
+    // Never mutate room status on list GET — that was wiping admin status changes.
+    // Stale "reserved" cleanup happens in getBookableRoom / booking flows only.
+    if (isAdmin) {
+      return NextResponse.json({ rooms });
+    }
 
+    const visible = rooms.filter((room) => isRoomBookable(room.status));
     return NextResponse.json({ rooms: visible });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: errorStatus(error) });

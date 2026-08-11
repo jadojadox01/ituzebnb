@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuth, requireAdmin } from "@/lib/auth";
-import { isRoomBookable, releaseStaleRoomReservation } from "@/lib/roomAvailability";
+import { isRoomBookable } from "@/lib/roomAvailability";
 import { sanitizeRoomData } from "@/lib/sanitizeRoomData";
 
 function errorStatus(error) {
@@ -14,13 +14,16 @@ export async function GET(request, { params }) {
   try {
     const { id } = await params;
     const roomId = parseInt(id, 10);
-    const room = await releaseStaleRoomReservation(roomId);
+    const auth = await getAuth();
+    const isAdmin = auth?.role === "admin";
+
+    // Do not mutate status on GET — admin edits must stick.
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
 
-    const auth = await getAuth();
-    const isAdmin = auth?.role === "admin";
     if (!isAdmin && !isRoomBookable(room.status)) {
       const hasBookingForRoom = auth
         ? await prisma.booking.findFirst({

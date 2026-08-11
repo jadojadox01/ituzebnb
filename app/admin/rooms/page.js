@@ -38,9 +38,11 @@ export default function AdminRooms() {
   const [saving, setSaving] = useState(false);
 
   const loadRooms = () => {
-    fetch("/api/rooms").then((r) => r.json()).then((d) => {
-      if (d.rooms) setRooms(d.rooms);
-    });
+    fetch("/api/rooms", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.rooms) setRooms(d.rooms);
+      });
   };
 
   useEffect(loadRooms, []);
@@ -100,6 +102,14 @@ export default function AdminRooms() {
         setError(data.error || "Could not save room. Please try again.");
         return;
       }
+      // Keep table in sync with the saved status immediately
+      if (data.room) {
+        setRooms((prev) => {
+          const exists = prev.some((r) => r.id === data.room.id);
+          if (!exists) return [data.room, ...prev];
+          return prev.map((r) => (r.id === data.room.id ? data.room : r));
+        });
+      }
       resetForm();
       loadRooms();
     } catch {
@@ -146,6 +156,7 @@ export default function AdminRooms() {
     available: "bg-green-100 text-green-700",
     reserved: "bg-yellow-100 text-yellow-700",
     booked: "bg-red-100 text-red-700",
+    unavailable: "bg-gray-200 text-gray-800",
   };
 
   return (
@@ -206,8 +217,9 @@ export default function AdminRooms() {
               Status
               <select className="min-h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="available">Available</option>
-                <option value="reserved">Reserved</option>
+                <option value="reserved">Reserved (temporary hold)</option>
                 <option value="booked">Booked</option>
+                <option value="unavailable">Unavailable (manual block)</option>
               </select>
             </label>
             <label className="grid gap-1.5 text-sm font-semibold">
