@@ -67,16 +67,17 @@ export function BookingWidget({
   onSearch,
   navigateToBook = true,
   className = "",
+  initialValues = null,
 }) {
   const { t } = useTranslation();
   const router = useRouter();
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
-  const [rooms, setRooms] = useState(1);
+  const [checkIn, setCheckIn] = useState(initialValues?.check_in || "");
+  const [checkOut, setCheckOut] = useState(initialValues?.check_out || "");
+  const [adults, setAdults] = useState(Number(initialValues?.adults) || 2);
+  const [children, setChildren] = useState(Number(initialValues?.children) || 0);
+  const [rooms, setRooms] = useState(Number(initialValues?.rooms) || 1);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [error, setError] = useState("");
   const [searching, setSearching] = useState(false);

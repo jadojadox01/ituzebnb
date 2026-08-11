@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { sendContactMessageAdminEmail } from "@/lib/email";
 import { logError } from "@/lib/logger";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
+import { sanitizeEmail, sanitizePhone, sanitizeText } from "@/lib/sanitizeInput";
 
 export async function GET() {
   try {
@@ -34,9 +35,13 @@ export async function POST(request) {
       );
     }
 
-    const { name, email, phone, message } = await request.json();
+    const body = await request.json();
+    const name = sanitizeText(body.name, { maxLength: 120 });
+    const email = sanitizeEmail(body.email);
+    const phone = sanitizePhone(body.phone);
+    const message = sanitizeText(body.message, { maxLength: 2000 });
 
-    if (!name?.trim() || !email?.trim() || !message?.trim()) {
+    if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Name, email, and message are required." },
         { status: 400 }
@@ -45,10 +50,10 @@ export async function POST(request) {
 
     const contactMessage = await prisma.contactMessage.create({
       data: {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone?.trim() || "",
-        message: message.trim(),
+        name,
+        email,
+        phone,
+        message,
         status: "new",
       },
     });

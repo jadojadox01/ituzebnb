@@ -8,23 +8,27 @@ import { formatRwf } from "@/lib/roomUtils";
 import { tRoomType } from "@/lib/i18n";
 
 function RoomCard({ room, searchParams, onSelect }) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const image = room.images?.[0] || "/images/background1.jpeg";
   const qs = new URLSearchParams({
-    ...searchParams,
+    check_in: String(searchParams?.check_in || ""),
+    check_out: String(searchParams?.check_out || ""),
+    adults: String(searchParams?.adults || "1"),
+    children: String(searchParams?.children || "0"),
+    rooms: String(searchParams?.rooms || "1"),
     room_id: String(room.id),
   }).toString();
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md">
       <div className="relative aspect-[16/10] bg-muted">
-        <Image src={image} alt={room.title} fill className="object-cover" sizes="(min-width:768px) 50vw, 100vw" />
+        <Image src={image} alt={room.title || "Room"} fill className="object-cover" sizes="(min-width:768px) 50vw, 100vw" />
       </div>
       <div className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
-              {tRoomType(room.room_type, language)}
+              {tRoomType(room.room_type, t)}
             </p>
             <h3 className="mt-1 text-lg font-extrabold">{room.title}</h3>
             {room.location ? (
@@ -41,10 +45,11 @@ function RoomCard({ room, searchParams, onSelect }) {
 
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <BedDouble size={14} /> {room.beds} {t("beds")}
+            <BedDouble size={14} /> {room.beds} {Number(room.beds) === 1 ? t("bed") : t("beds")}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Bath size={14} /> {room.bathrooms} {t("baths")}
+            <Bath size={14} /> {room.bathrooms}{" "}
+            {Number(room.bathrooms) === 1 ? t("bathroom") : t("bathrooms")}
           </span>
           <span className="inline-flex items-center gap-1">
             <Users size={14} /> {t("guestsCount", { count: room.capacity })}

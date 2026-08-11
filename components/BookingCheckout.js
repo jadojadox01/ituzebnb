@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronLeft, CreditCard, User } from "lucide-react";
-import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import { IntouchPayPaymentButton } from "@/components/IntouchPayPaymentButton";
 import { COUNTRIES } from "@/components/BookingWidget";
 import { useTranslation } from "@/lib/TranslationContext";
 import { formatRwf } from "@/lib/roomUtils";
+import { sanitizeEmail, sanitizePhone, sanitizeText } from "@/lib/sanitizeInput";
 
 export function BookingCheckout({ room, searchParams, user }) {
   const { t } = useTranslation();
@@ -40,15 +40,18 @@ export function BookingCheckout({ room, searchParams, user }) {
   );
 
   const validateGuest = () => {
-    if (!form.guest_name?.trim()) {
+    const name = sanitizeText(form.guest_name, { maxLength: 120 });
+    const email = sanitizeEmail(form.guest_email);
+    const phone = sanitizePhone(form.guest_phone);
+    if (!name) {
       setError(t("widgetNameRequired"));
       return false;
     }
-    if (!form.guest_email?.trim()) {
+    if (!email) {
       setError(t("widgetEmailRequired"));
       return false;
     }
-    if (!form.guest_phone?.trim()) {
+    if (!phone) {
       setError(t("widgetPhoneRequired"));
       return false;
     }
@@ -59,7 +62,7 @@ export function BookingCheckout({ room, searchParams, user }) {
     setError("");
     if (!validateGuest()) return;
 
-    if (form.payment_method === "mobile_money" && !form.mobile_phone?.trim()) {
+    if (form.payment_method === "mobile_money" && !sanitizePhone(form.mobile_phone)) {
       setError(t("bookingEnterMomo"));
       return;
     }
@@ -78,16 +81,16 @@ export function BookingCheckout({ room, searchParams, user }) {
           rooms_count: Number(searchParams.rooms) || 1,
           guests:
             (Number(searchParams.adults) || 1) + (Number(searchParams.children) || 0),
-          guest_name: form.guest_name.trim(),
-          guest_email: form.guest_email.trim(),
-          guest_phone: form.guest_phone.trim(),
-          guest_country: form.guest_country,
-          special_requests: form.special_requests,
+          guest_name: sanitizeText(form.guest_name, { maxLength: 120 }),
+          guest_email: sanitizeEmail(form.guest_email),
+          guest_phone: sanitizePhone(form.guest_phone),
+          guest_country: sanitizeText(form.guest_country, { maxLength: 60 }),
+          special_requests: sanitizeText(form.special_requests, { maxLength: 1000 }),
           payment_method: form.payment_method === "mobile_money" ? "mobile_money" : "",
           pay_later: form.payment_method === "pay_later",
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -152,6 +155,8 @@ export function BookingCheckout({ room, searchParams, user }) {
                 <span className="text-sm font-bold">{t("widgetFullName")}</span>
                 <input
                   required
+                  autoComplete="name"
+                  placeholder={t("widgetNamePlaceholder")}
                   value={form.guest_name}
                   onChange={(e) => setForm({ ...form, guest_name: e.target.value })}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
@@ -162,6 +167,8 @@ export function BookingCheckout({ room, searchParams, user }) {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
+                  placeholder={t("widgetEmailPlaceholder")}
                   value={form.guest_email}
                   onChange={(e) => setForm({ ...form, guest_email: e.target.value })}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
@@ -171,6 +178,9 @@ export function BookingCheckout({ room, searchParams, user }) {
                 <span className="text-sm font-bold">{t("contactPhone")}</span>
                 <input
                   required
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder={t("widgetPhonePlaceholder")}
                   value={form.guest_phone}
                   onChange={(e) => setForm({ ...form, guest_phone: e.target.value })}
                   className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
@@ -254,7 +264,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                       type="tel"
                       value={form.mobile_phone}
                       onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
-                      placeholder="07XXXXXXXX"
+                      placeholder={t("widgetMomoPlaceholder")}
                       className="mt-3 min-h-10 w-full rounded-lg border border-input px-3 text-sm"
                     />
                   )}

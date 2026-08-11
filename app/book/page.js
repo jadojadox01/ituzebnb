@@ -8,6 +8,8 @@ import { BookingWidget } from "@/components/BookingWidget";
 import { BookingSearchResults } from "@/components/BookingSearchResults";
 import { BookingCheckout } from "@/components/BookingCheckout";
 import { useTranslation } from "@/lib/TranslationContext";
+import { clampInt, isValidDateOnly } from "@/lib/sanitizeInput";
+import { parseJsonResponse } from "@/lib/clientUpload";
 
 function BookPageContent() {
   const { t } = useTranslation();
@@ -19,22 +21,28 @@ function BookPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const params = useMemo(
-    () => ({
-      check_in: searchParams.get("check_in") || "",
-      check_out: searchParams.get("check_out") || "",
-      adults: searchParams.get("adults") || "2",
-      children: searchParams.get("children") || "0",
-      rooms: searchParams.get("rooms") || "1",
-      room_id: searchParams.get("room_id") || "",
-      step: searchParams.get("step") || "",
-    }),
-    [searchParams]
-  );
+  const params = useMemo(() => {
+    const check_in = searchParams.get("check_in") || "";
+    const check_out = searchParams.get("check_out") || "";
+    return {
+      check_in: isValidDateOnly(check_in) ? check_in : "",
+      check_out: isValidDateOnly(check_out) ? check_out : "",
+      adults: String(clampInt(searchParams.get("adults"), 1, 12, 2)),
+      children: String(clampInt(searchParams.get("children"), 0, 8, 0)),
+      rooms: String(clampInt(searchParams.get("rooms"), 1, 6, 1)),
+      room_id: String(searchParams.get("room_id") || "").replace(/[^\d]/g, "").slice(0, 12),
+      step: searchParams.get("step") === "checkout" ? "checkout" : "",
+    };
+  }, [searchParams]);
 
   const runSearch = useCallback(async (overrides = {}) => {
     const p = { ...params, ...overrides };
     if (!p.check_in || !p.check_out) return;
+    if (!isValidDateOnly(p.check_in) || !isValidDateOnly(p.check_out) || p.check_out <= p.check_in) {
+      setError(t("bookingCheckoutAfterCheckin"));
+      setResults(null);
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -43,12 +51,12 @@ function BookPageContent() {
       const qs = new URLSearchParams({
         check_in: p.check_in,
         check_out: p.check_out,
-        adults: p.adults,
-        children: p.children,
-        rooms: p.rooms,
+        adults: String(clampInt(p.adults, 1, 12, 1)),
+        children: String(clampInt(p.children, 0, 8, 0)),
+        rooms: String(clampInt(p.rooms, 1, 6, 1)),
       });
       const res = await fetch(`/api/availability/search?${qs}`);
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) {
         setError(data.error || t("widgetSearchFailed"));
         setResults(null);
@@ -58,7 +66,7 @@ function BookPageContent() {
 
       const roomId = p.room_id || params.room_id;
       if (roomId) {
-        const match = data.rooms.find((r) => String(r.id) === String(roomId));
+        const match = (data.rooms || []).find((r) => String(r.id) === String(roomId));
         if (match) setSelectedRoom(match);
       }
     } catch {
@@ -103,6 +111,7 @@ function BookPageContent() {
             <BookingWidget
               variant="inline"
               navigateToBook={false}
+              initialValues={params}
               onSearch={async (p) => {
                 const qs = new URLSearchParams(p).toString();
                 window.history.replaceState(null, "", `/book?${qs}`);
@@ -147,7 +156,11 @@ function BookPageContent() {
             onSelectRoom={(room) => {
               setSelectedRoom(room);
               const qs = new URLSearchParams({
-                ...params,
+                check_in: params.check_in,
+                check_out: params.check_out,
+                adults: params.adults,
+                children: params.children,
+                rooms: params.rooms,
                 room_id: String(room.id),
                 step: "checkout",
               }).toString();

@@ -11,6 +11,7 @@ import {
   sendPaymentSuccessEmail,
 } from "@/lib/email";
 import { createInvoiceAttachment, getBookingForInvoice } from "@/lib/invoiceService";
+import { sanitizeEmail, sanitizePhone, sanitizeText, isValidDateOnly, clampInt } from "@/lib/sanitizeInput";
 import { v4 as uuidv4 } from "uuid";
 
 function errorStatus(error) {
@@ -55,8 +56,12 @@ export async function POST(request) {
     const data = await request.json();
 
     const roomId = parseInt(data.room_id, 10);
-    const checkIn = data.check_in;
-    const checkOut = data.check_out;
+    const checkIn = String(data.check_in || "").slice(0, 10);
+    const checkOut = String(data.check_out || "").slice(0, 10);
+
+    if (!Number.isFinite(roomId) || !isValidDateOnly(checkIn) || !isValidDateOnly(checkOut) || checkOut <= checkIn) {
+      return NextResponse.json({ error: "Invalid booking dates" }, { status: 400 });
+    }
 
     const availability = await isRoomAvailableForDates(roomId, checkIn, checkOut);
     if (!availability.available) {
@@ -76,9 +81,18 @@ export async function POST(request) {
     const taxRate = await getTaxRate();
     const pricing = calculatePricing(room, checkIn, checkOut, taxRate);
 
-    const adults = Math.max(1, parseInt(data.adults, 10) || 1);
-    const children = Math.max(0, parseInt(data.children, 10) || 0);
-    const guests = data.guests || adults + children;
+    const adults = clampInt(data.adults, 1, 12, 1);
+    const children = clampInt(data.children, 0, 8, 0);
+    const guests = clampInt(data.guests, 1, 20, adults + children);
+    const guestName = sanitizeText(data.guest_name || authUser.name || "", { maxLength: 120 });
+    const guestEmail = sanitizeEmail(data.guest_email || authUser.email || "");
+    const guestPhone = sanitizePhone(data.guest_phone || "");
+    const guestCountry = sanitizeText(data.guest_country || "", { maxLength: 60 });
+    const specialRequests = sanitizeText(data.special_requests || "", { maxLength: 1000 });
+
+    if (!guestName || !guestEmail) {
+      return NextResponse.json({ error: "Guest name and email are required" }, { status: 400 });
+    }
 
     const bookingId = "BKG-" + uuidv4().slice(0, 8).toUpperCase();
     const booking = await prisma.booking.create({
@@ -96,12 +110,12 @@ export async function POST(request) {
         guests,
         adults,
         children,
-        rooms_count: Math.max(1, parseInt(data.rooms_count, 10) || 1),
-        guest_name: data.guest_name || authUser.name || "",
-        guest_email: data.guest_email || authUser.email || "",
-        guest_phone: data.guest_phone || "",
-        guest_country: data.guest_country || "",
-        special_requests: data.special_requests || "",
+        rooms_count: clampInt(data.rooms_count, 1, 6, 1),
+        guest_name: guestName,
+        guest_email: guestEmail,
+        guest_phone: guestPhone,
+        guest_country: guestCountry,
+        special_requests: specialRequests,
         payment_method: data.payment_method === "mobile_money" ? "mobile_money" : "",
       },
       include: {
