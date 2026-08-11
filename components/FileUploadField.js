@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
+import { compressImageFile, parseJsonResponse } from "@/lib/clientUpload";
 
 export function FileUploadField({
   label,
@@ -33,12 +34,25 @@ export function FileUploadField({
     const uploaded = [];
 
     try {
-      for (const file of files) {
+      for (const original of files) {
+        let file = original;
+        if (String(original.type || "").startsWith("image/")) {
+          try {
+            file = await compressImageFile(original);
+          } catch {
+            file = original;
+          }
+        }
+
+        if (file.size > 4.2 * 1024 * 1024) {
+          throw new Error("File is still too large after compression. Please use a smaller image.");
+        }
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", folder);
         const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
+        const data = await parseJsonResponse(res);
         if (!res.ok) throw new Error(data.error || "Upload failed");
         uploaded.push(data.url);
       }

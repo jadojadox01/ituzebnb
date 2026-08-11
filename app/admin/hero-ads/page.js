@@ -3,56 +3,120 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { FileUploadField } from "@/components/FileUploadField";
+import { parseJsonResponse } from "@/lib/clientUpload";
+
+const emptyForm = {
+  title: "",
+  subtitle: "",
+  image: "",
+  link: "",
+  active: 1,
+  sort_order: 0,
+};
 
 export default function AdminHeroAds() {
   const [ads, setAds] = useState([]);
-  const [form, setForm] = useState({ title: "", subtitle: "", image: "", link: "", active: 1, sort_order: 0 });
+  const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const load = () => {
-    fetch("/api/hero-ads?all=1")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.ads) setAds(d.ads);
-      });
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/hero-ads?all=1");
+      const data = await parseJsonResponse(res);
+      if (!res.ok) {
+        setError(data.error || "Could not load hero slides.");
+        return;
+      }
+      setAds(data.ads || []);
+    } catch (err) {
+      setError(err.message || "Could not load hero slides.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     if (!form.image) {
-      alert("Please upload a hero image.");
+      setError("Please upload a hero image.");
       return;
     }
 
-    const url = "/api/hero-ads";
-    const method = editing ? "PUT" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editing ? { ...form, id: editing, sort_order: Number(form.sort_order) } : { ...form, sort_order: Number(form.sort_order) }),
-    });
-    if (res.ok) {
-      setForm({ title: "", subtitle: "", image: "", link: "", active: 1, sort_order: 0 });
+    setSaving(true);
+    try {
+      const payload = {
+        title: form.title || "",
+        subtitle: form.subtitle || "",
+        image: form.image,
+        link: form.link || "",
+        active: Number(form.active) === 1 ? 1 : 0,
+        sort_order: Number(form.sort_order) || 0,
+      };
+      if (editing) payload.id = editing;
+
+      const res = await fetch("/api/hero-ads", {
+        method: editing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) {
+        setError(data.error || "Could not save hero slide.");
+        return;
+      }
+
+      setForm(emptyForm);
       setEditing(null);
-      load();
+      await load();
+    } catch (err) {
+      setError(err.message || "Could not save hero slide.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleEdit = (ad) => {
-    setForm(ad);
+    setForm({
+      title: ad.title || "",
+      subtitle: ad.subtitle || "",
+      image: ad.image || "",
+      link: ad.link || "",
+      active: Number(ad.active) === 1 ? 1 : 0,
+      sort_order: ad.sort_order ?? 0,
+    });
     setEditing(ad.id);
+    setError("");
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this hero slide?")) return;
-    const res = await fetch("/api/hero-ads", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    if (res.ok) load();
+    setError("");
+    try {
+      const res = await fetch("/api/hero-ads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await parseJsonResponse(res);
+      if (!res.ok) {
+        setError(data.error || "Could not delete slide.");
+        return;
+      }
+      await load();
+    } catch (err) {
+      setError(err.message || "Could not delete slide.");
+    }
   };
 
   return (
@@ -64,6 +128,12 @@ export default function AdminHeroAds() {
           Fallback text comes from Settings → Homepage hero when a slide has no title.
         </p>
       </div>
+
+      {error ? (
+        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="mt-6 rounded-lg border border-border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-extrabold">{editing ? "Edit slide" : "Add hero slide"}</h2>
@@ -120,20 +190,25 @@ export default function AdminHeroAds() {
               accept="image/*"
               value={form.image}
               onChange={(url) => setForm({ ...form, image: url })}
-              hint="Upload a high-quality photo for this hero slide."
+              hint="Upload a high-quality photo. Large images are compressed automatically before upload."
             />
           </div>
         </div>
         <div className="mt-4 flex gap-3">
-          <button type="submit" className="rounded-md bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground">
-            {editing ? "Update slide" : "Add slide"}
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Saving..." : editing ? "Update slide" : "Add slide"}
           </button>
           {editing && (
             <button
               type="button"
               onClick={() => {
                 setEditing(null);
-                setForm({ title: "", subtitle: "", image: "", link: "", active: 1, sort_order: 0 });
+                setForm(emptyForm);
+                setError("");
               }}
               className="rounded-md border border-border px-6 py-2.5 text-sm font-semibold"
             >
@@ -144,7 +219,9 @@ export default function AdminHeroAds() {
       </form>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {ads.length === 0 ? (
+        {loading ? (
+          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Loading slides...</p>
+        ) : ads.length === 0 ? (
           <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
             No hero slides yet. Add your first slide above.
           </p>

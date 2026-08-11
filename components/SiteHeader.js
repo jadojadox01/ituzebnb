@@ -30,6 +30,7 @@ export function SiteHeader() {
 
   const navItems = [
     { label: t("navHome"), href: "/" },
+    { label: t("navBookNow"), href: "/book" },
     { label: t("navBookRoom"), href: "/houses" },
     { label: t("navAbout"), href: "/about" },
     { label: t("navContact"), href: "/contact" },

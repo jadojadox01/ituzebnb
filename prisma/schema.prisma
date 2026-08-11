@@ -38,25 +38,47 @@ model Room {
   created_at   DateTime  @default(now())
   updated_at   DateTime  @updatedAt
   bookings     Booking[]
+  blocked_dates BlockedDate[]
 }
 
 model Booking {
-  id               Int      @id @default(autoincrement())
-  booking_id       String   @unique
+  id               Int       @id @default(autoincrement())
+  booking_id       String    @unique
   user_id          Int
   room_id          Int
   check_in         String
   check_out        String
   total_amount     Float
-  status           String   @default("pending")
-  payment_status   String   @default("unpaid")
-  payment_method   String   @default("")
-  payment_details  String   @default("")
-  guests           Int      @default(1)
-  special_requests String   @default("")
-  created_at       DateTime @default(now())
-  user             User     @relation(fields: [user_id], references: [id])
-  room             Room     @relation(fields: [room_id], references: [id])
+  subtotal_amount  Float     @default(0)
+  tax_amount       Float     @default(0)
+  status           String    @default("pending")
+  payment_status   String    @default("unpaid")
+  payment_method   String    @default("")
+  payment_details  String    @default("")
+  guests           Int       @default(1)
+  adults           Int       @default(1)
+  children         Int       @default(0)
+  rooms_count      Int       @default(1)
+  guest_name       String    @default("")
+  guest_email      String    @default("")
+  guest_phone      String    @default("")
+  guest_country    String    @default("")
+  special_requests String    @default("")
+  checked_in_at    DateTime?
+  checked_out_at   DateTime?
+  created_at       DateTime  @default(now())
+  user             User      @relation(fields: [user_id], references: [id])
+  room             Room      @relation(fields: [room_id], references: [id])
+}
+
+model BlockedDate {
+  id         Int      @id @default(autoincrement())
+  room_id    Int?
+  start_date String
+  end_date   String
+  reason     String   @default("")
+  created_at DateTime @default(now())
+  room       Room?    @relation(fields: [room_id], references: [id], onDelete: Cascade)
 }
 
 model Setting {

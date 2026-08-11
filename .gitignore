@@ -45,3 +45,6 @@ skills-lock.json
 
 public/uploads/*
 !public/uploads/.gitkeep
+
+.vercel
+.env*.local

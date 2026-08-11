@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, BedDouble, CalendarCheck, Settings, ImagePlus, LogOut, Menu, X, Home, CreditCard, Users, Mail
+  LayoutDashboard, BedDouble, CalendarCheck, Settings, ImagePlus, LogOut, Menu, X, Home, CreditCard, Users, Mail, CalendarX
 } from "lucide-react";
 import { DEFAULT_SITE_NAME } from "@/lib/siteDefaults";
 
@@ -12,6 +12,7 @@ const sidebarLinks = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Rooms", href: "/admin/rooms", icon: BedDouble },
   { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
+  { label: "Blocked dates", href: "/admin/blocked-dates", icon: CalendarX },
   { label: "Messages", href: "/admin/messages", icon: Mail },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Bath, BedDouble, MapPin, ShieldCheck } from "lucide-react";
 import { HouseMediaGallery } from "@/components/HouseMediaGallery";
 import { BookingWizard } from "@/components/BookingWizard";
+import { BookingWidget } from "@/components/BookingWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useTranslation } from "@/lib/TranslationContext";
@@ -142,7 +143,16 @@ export default function HouseDetailsPage() {
               </p>
             </div>
 
-            {canBook && <BookingWizard listing={listing} user={user} price={price} />}
+            {canBook && (
+              <>
+                <div className="mt-5">
+                  <BookingWidget variant="compact" roomId={listing.id} />
+                </div>
+                <div className="mt-5 border-t border-border pt-5">
+                  <BookingWizard listing={listing} user={user} price={price} />
+                </div>
+              </>
+            )}
 
             {!canBook && (
               <p className="mt-5 rounded-md bg-muted px-4 py-3 text-center text-sm font-bold text-muted-foreground">

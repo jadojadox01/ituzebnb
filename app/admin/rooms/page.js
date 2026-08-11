@@ -34,6 +34,8 @@ export default function AdminRooms() {
   const [editing, setEditing] = useState(null);
   const [imagePaths, setImagePaths] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const loadRooms = () => {
     fetch("/api/rooms").then((r) => r.json()).then((d) => {
@@ -48,10 +50,15 @@ export default function AdminRooms() {
     setImagePaths([]);
     setEditing(null);
     setShowForm(false);
+    setError("");
+    setSaving(false);
   };
 
   const toggleAmenity = (amenity) => {
-    const current = form.amenities ? form.amenities.split(", ") : [];
+    const current = String(form.amenities || "")
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
     const updated = current.includes(amenity)
       ? current.filter((a) => a !== amenity)
       : [...current, amenity];
@@ -60,28 +67,71 @@ export default function AdminRooms() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSaving(true);
 
-    const imagesStr = imagePaths.join(", ");
-    const url = editing ? `/api/rooms/${editing}` : "/api/rooms";
-    const method = editing ? "PUT" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, images: imagesStr }),
-    });
-    if (res.ok) {
+    const payload = {
+      title: form.title,
+      room_type: form.room_type,
+      price_daily: Number(form.price_daily) || 0,
+      price_monthly: Number(form.price_monthly) || 0,
+      currency: form.currency,
+      status: form.status,
+      description: form.description || "",
+      beds: Number(form.beds) || 1,
+      bathrooms: Number(form.bathrooms) || 1,
+      location: form.location || "",
+      capacity: Number(form.capacity) || 1,
+      amenities: form.amenities || "",
+      images: imagePaths.join(", "),
+      video_url: form.video_url || "",
+    };
+
+    try {
+      const url = editing ? `/api/rooms/${editing}` : "/api/rooms";
+      const method = editing ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not save room. Please try again.");
+        return;
+      }
       resetForm();
       loadRooms();
+    } catch {
+      setError("Could not save room. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleEdit = (room) => {
-    setForm(room);
+    setForm({
+      title: room.title || "",
+      room_type: room.room_type || "single",
+      price_daily: room.price_daily ?? "",
+      price_monthly: room.price_monthly ?? "",
+      currency: room.currency || "RWF",
+      status: room.status || "available",
+      description: room.description || "",
+      beds: room.beds ?? 1,
+      bathrooms: room.bathrooms ?? 1,
+      location: room.location || "",
+      capacity: room.capacity ?? 1,
+      amenities: room.amenities || "",
+      images: room.images || "",
+      video_url: room.video_url || "",
+    });
     setEditing(room.id);
     setShowForm(true);
+    setError("");
     setImagePaths(
       room.images
-        ? room.images.split(",").map((i) => i.trim()).filter(Boolean)
+        ? String(room.images).split(",").map((i) => i.trim()).filter(Boolean)
         : []
     );
   };
@@ -119,6 +169,11 @@ export default function AdminRooms() {
       {showForm && (
         <div className="mt-6 rounded-lg border border-border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-extrabold">{editing ? "Edit room" : "Add new room"}</h2>
+          {error ? (
+            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
           <form onSubmit={handleSubmit} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="grid gap-1.5 text-sm font-semibold">
               Title
@@ -176,7 +231,10 @@ export default function AdminRooms() {
               <p className="mb-2 text-sm font-semibold">Amenities</p>
               <div className="flex flex-wrap gap-2">
                 {AMENITY_OPTIONS.map((amenity) => {
-                  const selected = form.amenities.includes(amenity);
+                  const selected = String(form.amenities || "")
+                    .split(",")
+                    .map((a) => a.trim())
+                    .includes(amenity);
                   return (
                     <button
                       key={amenity}
@@ -222,8 +280,12 @@ export default function AdminRooms() {
             </label>
 
             <div className="flex gap-3 sm:col-span-2 lg:col-span-3">
-              <button type="submit" className="rounded-md bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground">
-                {editing ? "Update room" : "Create room"}
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-md bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {saving ? "Saving..." : editing ? "Update room" : "Create room"}
               </button>
               <button type="button" onClick={resetForm} className="rounded-md border border-border px-6 py-2.5 text-sm font-semibold">
                 Cancel

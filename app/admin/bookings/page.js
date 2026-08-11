@@ -118,11 +118,13 @@ export default function AdminBookings() {
   const badgeClass = (s) =>
     s === "confirmed"
       ? "bg-green-100 text-green-700"
-      : s === "pending"
-        ? "bg-yellow-100 text-yellow-700"
-        : s === "cancelled"
-          ? "bg-red-100 text-red-700"
-          : "bg-blue-100 text-blue-700";
+      : s === "checked_in"
+        ? "bg-blue-100 text-blue-700"
+        : s === "pending"
+          ? "bg-yellow-100 text-yellow-700"
+          : s === "cancelled"
+            ? "bg-red-100 text-red-700"
+            : "bg-gray-100 text-gray-700";
 
   const paymentBadge = (s) =>
     s === "paid"
@@ -160,14 +162,14 @@ export default function AdminBookings() {
           <button
             type="button"
             disabled={actionLoading}
-            onClick={() => updateBooking(booking.id, { status: "cancelled" })}
+            onClick={() => updateBooking(booking.id, { action: "reject" })}
             className="rounded-md bg-red-500 px-2 py-1 text-xs font-bold text-white hover:bg-red-600 disabled:opacity-60"
           >
-            Cancel
+            Reject
           </button>
         </>
       )}
-      {booking.payment_status !== "paid" && booking.status !== "cancelled" && (
+      {booking.payment_status !== "paid" && booking.status !== "cancelled" && booking.status !== "completed" && (
         <button
           type="button"
           disabled={actionLoading}
@@ -175,6 +177,26 @@ export default function AdminBookings() {
           className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
         >
           Mark Paid
+        </button>
+      )}
+      {(booking.status === "confirmed" || (booking.status === "pending" && booking.payment_status === "paid")) && (
+        <button
+          type="button"
+          disabled={actionLoading}
+          onClick={() => updateBooking(booking.id, { action: "check_in" })}
+          className="rounded-md bg-blue-500 px-2 py-1 text-xs font-bold text-white hover:bg-blue-600 disabled:opacity-60"
+        >
+          Check in
+        </button>
+      )}
+      {booking.status === "checked_in" && (
+        <button
+          type="button"
+          disabled={actionLoading}
+          onClick={() => updateBooking(booking.id, { action: "check_out" })}
+          className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
+        >
+          Check out
         </button>
       )}
       {booking.status === "confirmed" && (
@@ -187,7 +209,7 @@ export default function AdminBookings() {
               payment_status: booking.payment_status === "paid" ? "paid" : booking.payment_status,
             })
           }
-          className="rounded-md bg-blue-500 px-2 py-1 text-xs font-bold text-white hover:bg-blue-600 disabled:opacity-60"
+          className="rounded-md bg-gray-600 px-2 py-1 text-xs font-bold text-white hover:bg-gray-700 disabled:opacity-60"
         >
           Complete
         </button>

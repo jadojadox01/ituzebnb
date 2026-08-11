@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowRight, CalendarCheck, Sparkles } from "lucide-react";
+import { BookingWidget } from "@/components/BookingWidget";
 import { collectHeroSlides, formatRwf } from "@/lib/roomUtils";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 import { localizedSetting } from "@/lib/i18n";
@@ -171,6 +172,10 @@ export default function HomeHero({ settings, rooms, availableCount, totalCount, 
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="relative z-20 mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+        <BookingWidget variant="hero" className="mx-auto max-w-5xl shadow-2xl" />
       </div>
     </section>
   );
