@@ -126,12 +126,9 @@ export async function POST(request) {
 
     await reserveRoom(room.id);
 
-    const guestEmail = booking.guest_email || booking.user?.email;
-    const guestName = booking.guest_name || booking.user?.name;
-
     await sendBookingReceivedEmail({
-      to: guestEmail,
-      customerName: guestName,
+      to: guestEmail || booking.user?.email,
+      customerName: guestName || booking.user?.name,
       orderId: booking.booking_id,
       roomTitle: booking.room?.title,
       checkIn: booking.check_in,
@@ -148,8 +145,8 @@ export async function POST(request) {
     if (adminEmail) {
       await sendNewBookingAdminEmail({
         to: adminEmail,
-        customerName: guestName,
-        customerEmail: guestEmail,
+        customerName: guestName || booking.user?.name,
+        customerEmail: guestEmail || booking.user?.email,
         customerPhone: booking.guest_phone,
         orderId: booking.booking_id,
         roomTitle: booking.room?.title,
