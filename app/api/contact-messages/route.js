@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { sendContactMessageAdminEmail } from "@/lib/email";
 import { logError } from "@/lib/logger";
+import { getClientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function GET() {
   try {
@@ -13,8 +14,9 @@ export async function GET() {
     const newCount = messages.filter((m) => m.status === "new").length;
     return NextResponse.json({ messages, newCount });
   } catch (error) {
-    const status =
-      error.message.includes("Forbidden") || error.message.includes("Unauthorized")
+    const status = error.message.includes("Unauthorized")
+      ? 401
+      : error.message.includes("Forbidden")
         ? 403
         : 500;
     return NextResponse.json({ error: error.message }, { status });
@@ -23,6 +25,15 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const ip = getClientIp(request);
+    const limited = rateLimit(`contact:${ip}`, { limit: 8, windowMs: 60_000 });
+    if (!limited.allowed) {
+      return NextResponse.json(
+        { error: "Too many messages. Please wait a minute and try again." },
+        { status: 429 }
+      );
+    }
+
     const { name, email, phone, message } = await request.json();
 
     if (!name?.trim() || !email?.trim() || !message?.trim()) {
@@ -42,7 +53,6 @@ export async function POST(request) {
       },
     });
 
-    // Notify admin (dashboard + optional email)
     const adminEmail =
       process.env.SUPPORT_EMAIL ||
       process.env.ADMIN_EMAIL ||

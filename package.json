@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node scripts/seed-neon.js",
-    "backup:db": "node scripts/backup-database.js"
+    "backup:db": "node scripts/backup-database.js",
+    "test:availability": "node scripts/test-availability.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth, requireAdmin } from "@/lib/auth";
 import { reserveRoom } from "@/lib/roomAvailability";
-import { isRoomAvailableForDates } from "@/lib/availabilityService";
-import { calculatePricing } from "@/lib/availabilityService";
-import { getTaxRate } from "@/lib/availabilityService";
+import { isRoomAvailableForDates, calculatePricing, getTaxRate } from "@/lib/availabilityService";
 import {
   sendBookingApprovedEmail,
   sendBookingReceivedEmail,
@@ -14,6 +12,13 @@ import {
 } from "@/lib/email";
 import { createInvoiceAttachment, getBookingForInvoice } from "@/lib/invoiceService";
 import { v4 as uuidv4 } from "uuid";
+
+function errorStatus(error) {
+  const msg = String(error?.message || "");
+  if (msg.includes("Unauthorized")) return 401;
+  if (msg.includes("Forbidden")) return 403;
+  return 500;
+}
 
 export async function GET() {
   try {
@@ -40,7 +45,7 @@ export async function GET() {
 
     return NextResponse.json({ bookings });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: errorStatus(error) });
   }
 }
 
@@ -143,8 +148,7 @@ export async function POST(request) {
 
     return NextResponse.json({ booking }, { status: 201 });
   } catch (error) {
-    const status = error.message?.includes("Unauthorized") ? 401 : 500;
-    return NextResponse.json({ error: error.message }, { status });
+    return NextResponse.json({ error: error.message }, { status: errorStatus(error) });
   }
 }
 
@@ -262,6 +266,6 @@ export async function PUT(request) {
 
     return NextResponse.json({ booking });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: errorStatus(error) });
   }
 }

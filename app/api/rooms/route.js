@@ -13,7 +13,12 @@ function errorStatus(error) {
 
 export async function GET() {
   try {
-    await seedDatabase();
+    // Seed only when inventory is empty (avoid DB work on every public request)
+    const roomCount = await prisma.room.count();
+    if (roomCount === 0) {
+      await seedDatabase();
+    }
+
     const auth = await getAuth();
     const isAdmin = auth?.role === "admin";
 
