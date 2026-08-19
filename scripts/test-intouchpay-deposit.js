@@ -67,7 +67,7 @@ async function main() {
   const sandbox = environment === "sandbox" || environment === "test" || baseUrl.includes("developer.intouchpay.co.rw");
   const url = sandbox
     ? `${baseUrl}/api/v1/sandbox/requestdeposit/`
-    : `${baseUrl}/api/v1/requestdeposit/`;
+    : `${baseUrl}/api/requestdeposit/`;
 
   const username = cleanEnv(process.env.INTOUCHPAY_USERNAME);
   const accountNumber = cleanEnv(process.env.INTOUCHPAY_ACCOUNT_NUMBER);

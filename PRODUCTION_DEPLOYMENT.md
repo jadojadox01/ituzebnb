@@ -98,8 +98,10 @@ Ensure:
    INTOUCHPAY_ACCOUNT_NUMBER=<production account>
    INTOUCHPAY_PARTNER_PASSWORD=<production partner password>
    ```
-   Production API paths have **no** `/production/` segment:
-   `https://www.intouchpay.co.rw/api/v1/requestpayment/`
+   Production API paths (no `/v1/`, no `/production/`):
+   `https://www.intouchpay.co.rw/api/requestpayment/`
+   `https://www.intouchpay.co.rw/api/requestdeposit/`
+   `https://www.intouchpay.co.rw/api/getbalance/`
    Guest checkout uses **requestpayment** (collect). **requestdeposit** sends money out of your wallet.
 5. Restart application.
 6. Admin → Payments → **Test connection**.
