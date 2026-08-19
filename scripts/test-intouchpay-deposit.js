@@ -59,9 +59,15 @@ function normalizePhone(phone) {
 }
 
 async function main() {
-  const baseUrl = (process.env.INTOUCHPAY_BASE_URL || "https://developer.intouchpay.co.rw").replace(/\/$/, "");
-  const environment = process.env.INTOUCHPAY_ENV || "sandbox";
-  const url = `${baseUrl}/api/v1/${environment}/requestdeposit/`;
+  const baseUrl = String(process.env.INTOUCHPAY_BASE_URL || "https://developer.intouchpay.co.rw")
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/\/+$/, "");
+  const environment = String(process.env.INTOUCHPAY_ENV || "sandbox").toLowerCase();
+  const sandbox = environment === "sandbox" || environment === "test" || baseUrl.includes("developer.intouchpay.co.rw");
+  const url = sandbox
+    ? `${baseUrl}/api/v1/sandbox/requestdeposit/`
+    : `${baseUrl}/api/v1/requestdeposit/`;
 
   const username = cleanEnv(process.env.INTOUCHPAY_USERNAME);
   const accountNumber = cleanEnv(process.env.INTOUCHPAY_ACCOUNT_NUMBER);

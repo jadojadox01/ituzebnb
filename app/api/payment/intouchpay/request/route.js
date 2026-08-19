@@ -10,8 +10,9 @@ import {
 import {
   applyIntouchPaymentUpdate,
   createPaymentTransaction,
-  findPendingTransactionForOrder,
+  getActivePendingTransactionForOrder,
   logPayment,
+  markPaymentTransactionFailed,
 } from "@/lib/paymentTransactions";
 import { PAYMENT_EVENTS, writePaymentLog } from "@/lib/paymentLogs";
 import { logIntouchFailure } from "@/lib/logger";
@@ -66,15 +67,15 @@ export async function POST(request) {
     const normalizedPhone = normalizeRwandaPhone(phone);
     const paymentAmount = assertBookingAmount(booking, body.amount ?? booking.total_amount);
 
-    const pending = await findPendingTransactionForOrder(orderId);
+    const pending = await getActivePendingTransactionForOrder(orderId);
     if (pending) {
-      return NextResponse.json(
-        {
-          error: "A payment is already pending for this order.",
-          transaction: pending,
-        },
-        { status: 409 }
-      );
+      return NextResponse.json({
+        success: true,
+        alreadyPending: true,
+        message: "Confirm the MoMo prompt on your phone. If it expired, wait a moment and try again.",
+        transaction: pending,
+        orderId,
+      });
     }
 
     const requestTransactionId = generateRequestTransactionId(orderId);
@@ -144,6 +145,7 @@ export async function POST(request) {
     });
 
     if (transactionId) {
+      await markPaymentTransactionFailed(transactionId, error.message);
       await writePaymentLog({
         paymentTransactionId: transactionId,
         event: PAYMENT_EVENTS.REQUEST_FAILED,

@@ -294,15 +294,21 @@ export function BookingCheckout({ room, searchParams, user }) {
         {step === 3 && paymentOrder && (
           <div>
             <p className="mb-4 text-sm text-muted-foreground">{success}</p>
+            {error && (
+              <p className="mb-4 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-700">
+                {typeof error === "string" ? error : error.error || t("paymentFailed")}
+              </p>
+            )}
             <IntouchPayPaymentButton
               orderId={paymentOrder.orderId}
               amount={paymentOrder.amount}
               defaultPhone={form.mobile_phone}
+              autoStart
               onSuccess={() => {
                 setStep(4);
                 setSuccess(t("paymentConfirmed"));
               }}
-              onError={(msg) => setError(msg)}
+              onError={(data) => setError(data?.error || t("paymentFailed"))}
             />
           </div>
         )}

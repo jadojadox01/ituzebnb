@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Smartphone } from "lucide-react";
 import { useTranslation } from "@/lib/TranslationContext";
 
@@ -13,6 +13,7 @@ export function IntouchPayPaymentButton({
   amount,
   defaultPhone = "",
   disabled = false,
+  autoStart = false,
   onPending,
   onSuccess,
   onError,
@@ -27,6 +28,7 @@ export function IntouchPayPaymentButton({
   const [requestTransactionId, setRequestTransactionId] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [phase, setPhase] = useState("idle"); // idle | sending | pending | checking | success | error
+  const autoStarted = useRef(false);
 
   useEffect(() => {
     if (defaultPhone) setPhone(defaultPhone);
@@ -129,30 +131,45 @@ export function IntouchPayPaymentButton({
     }
   };
 
+  useEffect(() => {
+    if (!autoStart || autoStarted.current || !orderId || !phone.trim() || disabled) return;
+    autoStarted.current = true;
+    handlePay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot auto charge after booking
+  }, [autoStart, orderId]);
+
   const showLoadingState = phase === "sending" || phase === "pending" || checking;
 
   return (
     <div className={`grid gap-3 ${className}`}>
-      <label className="grid gap-1 text-sm font-semibold">
-        {t("mobileMoneyNumber")}
-        <input
-          type="tel"
-          className="min-h-11 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
-          placeholder="0781234567"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          disabled={disabled || loading}
-        />
-      </label>
+      {!autoStart && (
+        <label className="grid gap-1 text-sm font-semibold">
+          {t("mobileMoneyNumber")}
+          <input
+            type="tel"
+            className="min-h-11 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
+            placeholder="0781234567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            disabled={disabled || loading}
+          />
+        </label>
+      )}
+
+      {autoStart && phone && (
+        <p className="text-sm text-muted-foreground">
+          {t("mobileMoneyNumber")}: <span className="font-semibold text-foreground">{phone}</span>
+        </p>
+      )}
 
       <button
         type="button"
         onClick={handlePay}
-        disabled={disabled || loading}
+        disabled={disabled || loading || phase === "success"}
         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-60"
       >
         <Smartphone size={16} aria-hidden="true" />
-        {loading ? t("sending") : t("payWithMomo")}
+        {loading ? t("sending") : phase === "pending" ? t("paymentWaitingConfirmation") : t("payWithMomo")}
       </button>
 
       {showLoadingState && (

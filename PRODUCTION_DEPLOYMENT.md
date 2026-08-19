@@ -93,11 +93,14 @@ Ensure:
 4. Update env:
    ```env
    INTOUCHPAY_ENV=production
-   INTOUCHPAY_BASE_URL=<production API base from IntouchPay>
+   INTOUCHPAY_BASE_URL=https://www.intouchpay.co.rw
    INTOUCHPAY_USERNAME=<production username>
    INTOUCHPAY_ACCOUNT_NUMBER=<production account>
-   INTOUCHPAY_PARTNER_PASSWORD=<production password>
+   INTOUCHPAY_PARTNER_PASSWORD=<production partner password>
    ```
+   Production API paths have **no** `/production/` segment:
+   `https://www.intouchpay.co.rw/api/v1/requestpayment/`
+   Guest checkout uses **requestpayment** (collect). **requestdeposit** sends money out of your wallet.
 5. Restart application.
 6. Admin → Payments → **Test connection**.
 

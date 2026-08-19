@@ -197,10 +197,11 @@ export function BookingWizard({ listing, user, price }) {
             orderId={paymentOrder.orderId}
             amount={paymentOrder.amount}
             defaultPhone={form.mobile_phone}
+            autoStart
             onSuccess={() => {
               router.push("/houses?booking=success");
             }}
-            onError={(data) => setError(data.error || t("bookingPaymentFailed"))}
+            onError={(data) => setError(data?.error || t("bookingPaymentFailed"))}
           />
         </div>
         {error && (

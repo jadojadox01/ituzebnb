@@ -87,7 +87,7 @@ export default function AdminPayments() {
       </p>
 
       <div className="mt-6 rounded-lg border border-border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-extrabold">IntouchPay sandbox</h2>
+        <h2 className="text-lg font-extrabold">IntouchPay</h2>
 
         <div className="mt-4 rounded-md border border-border bg-muted/20 p-4 text-sm">
           <p className="font-bold">Endpoints</p>
@@ -186,9 +186,9 @@ export default function AdminPayments() {
         </div>
 
         <div className="mt-6 rounded-md border border-border bg-muted/20 p-4">
-          <p className="text-sm font-bold">Test sandbox deposit (requestdeposit)</p>
+          <p className="text-sm font-bold">Test deposit (requestdeposit — sends money out)</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sends MoMo to the phone below from your IntouchPay sandbox balance. Use a unique request ID each test.
+            Guest checkout uses requestpayment (collects money). This deposit button pays a phone from your IntouchPay wallet. Use a unique request ID each test.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-xs font-semibold">
