@@ -112,8 +112,7 @@ export default function AdminPayments() {
                 <span className="font-mono">{`{ "message": "success", "success": true, "request_id": "..." }`}</span>
               </li>
               <li>
-                Set <span className="font-mono">INTOUCHPAY_CALLBACK_URL</span> to your ngrok URL +{" "}
-                <span className="font-mono">/api/payment/intouchpay/callback</span> and restart the server.
+                Live API often requires an IP whitelist. If you see “IP is Not Allowed”, send IntouchPay the server IP. On Vercel the IP changes unless you enable Static IPs in project Networking.
               </li>
             </ul>
           </div>
@@ -136,6 +135,11 @@ export default function AdminPayments() {
           >
             <p className="font-bold">{testResult.message}</p>
             {testResult.apiUrl && <p className="mt-1 break-all text-xs">URL: {testResult.apiUrl}</p>}
+            {testResult.response && (
+              <pre className="mt-2 overflow-x-auto rounded bg-white/70 p-2 text-xs">
+                {JSON.stringify(testResult.response, null, 2)}
+              </pre>
+            )}
           </div>
         )}
 
