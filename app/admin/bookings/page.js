@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, Search, X } from "lucide-react";
+import { Car, Filter, Search, X } from "lucide-react";
 
 function formatRwf(amount) {
   return `RWF ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount || 0)}`;
@@ -13,6 +13,7 @@ export default function AdminBookings() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [pickupFilter, setPickupFilter] = useState("all");
   const [roomFilter, setRoomFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,6 +53,11 @@ export default function AdminBookings() {
     if (paymentFilter !== "all") {
       list = list.filter((b) => b.payment_status === paymentFilter);
     }
+    if (pickupFilter === "yes") {
+      list = list.filter((b) => Boolean(b.pickup_requested));
+    } else if (pickupFilter === "no") {
+      list = list.filter((b) => !b.pickup_requested);
+    }
     if (roomFilter !== "all") {
       list = list.filter((b) => (b.room?.title || b.room_title) === roomFilter);
     }
@@ -62,12 +68,13 @@ export default function AdminBookings() {
           b.booking_id?.toLowerCase().includes(q) ||
           (b.user?.name || b.user_name || "").toLowerCase().includes(q) ||
           (b.user?.email || b.user_email || "").toLowerCase().includes(q) ||
-          (b.room?.title || b.room_title || "").toLowerCase().includes(q)
+          (b.room?.title || b.room_title || "").toLowerCase().includes(q) ||
+          (b.pickup_details || "").toLowerCase().includes(q)
       );
     }
 
     return list;
-  }, [bookings, statusFilter, paymentFilter, roomFilter, search]);
+  }, [bookings, statusFilter, paymentFilter, pickupFilter, roomFilter, search]);
 
   const sortedBookings = useMemo(() => {
     const list = [...filteredBookings];
@@ -89,7 +96,7 @@ export default function AdminBookings() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter, paymentFilter, roomFilter, sortOrder, pageSize]);
+  }, [search, statusFilter, paymentFilter, pickupFilter, roomFilter, sortOrder, pageSize]);
 
   const updateBooking = async (id, patch) => {
     setActionError("");
@@ -139,13 +146,18 @@ export default function AdminBookings() {
     setSearch("");
     setStatusFilter("all");
     setPaymentFilter("all");
+    setPickupFilter("all");
     setRoomFilter("all");
     setSortOrder("newest");
     setCurrentPage(1);
   };
 
   const hasActiveFilters =
-    search.trim() || statusFilter !== "all" || paymentFilter !== "all" || roomFilter !== "all";
+    search.trim() ||
+    statusFilter !== "all" ||
+    paymentFilter !== "all" ||
+    pickupFilter !== "all" ||
+    roomFilter !== "all";
 
   const ActionButtons = ({ booking, compact = false }) => (
     <div className={`flex flex-wrap gap-1 ${compact ? "" : "gap-2"}`}>
@@ -238,12 +250,12 @@ export default function AdminBookings() {
       )}
 
       <div className="mt-6 rounded-lg border border-border bg-white p-4 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[1fr_repeat(3,minmax(140px,180px))_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_repeat(4,minmax(130px,170px))_auto]">
           <label className="flex min-h-10 items-center gap-2 rounded-md border border-input bg-background px-3">
             <Search size={16} className="shrink-0 text-muted-foreground" />
             <input
               className="w-full bg-transparent text-sm outline-none"
-              placeholder="Search booking ID, guest, email, room..."
+              placeholder="Search booking ID, guest, email, room, pickup..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -269,6 +281,15 @@ export default function AdminBookings() {
             <option value="pending">Payment pending</option>
             <option value="paid">Paid</option>
             <option value="failed">Failed</option>
+          </select>
+          <select
+            className="min-h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
+            value={pickupFilter}
+            onChange={(e) => setPickupFilter(e.target.value)}
+          >
+            <option value="all">All pickups</option>
+            <option value="yes">Pickup requested</option>
+            <option value="no">No pickup</option>
           </select>
           <select
             className="min-h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
@@ -336,6 +357,7 @@ export default function AdminBookings() {
               <th className="px-4 py-3 font-semibold">Check In</th>
               <th className="px-4 py-3 font-semibold">Check Out</th>
               <th className="px-4 py-3 font-semibold">Amount</th>
+              <th className="px-4 py-3 font-semibold">Pickup</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Payment</th>
               <th className="px-4 py-3 font-semibold">Actions</th>
@@ -344,7 +366,7 @@ export default function AdminBookings() {
           <tbody>
             {sortedBookings.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                   {bookings.length === 0 ? "No bookings yet." : "No bookings match your filters."}
                 </td>
               </tr>
@@ -365,6 +387,19 @@ export default function AdminBookings() {
                   <td className="px-4 py-3">{b.check_in}</td>
                   <td className="px-4 py-3">{b.check_out}</td>
                   <td className="px-4 py-3">{formatRwf(b.total_amount)}</td>
+                  <td className="px-4 py-3">
+                    {b.pickup_requested ? (
+                      <span
+                        className="inline-flex max-w-[10rem] items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
+                        title={b.pickup_details || "Car pickup requested"}
+                      >
+                        <Car size={12} aria-hidden="true" />
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${badgeClass(b.status)}`}>
                       {b.status}
@@ -473,12 +508,22 @@ export default function AdminBookings() {
                 </div>
               </div>
 
-              {selectedBooking.pickup_requested && (
-                <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                  <p className="text-sm font-bold text-primary">Car pickup requested</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm">{selectedBooking.pickup_details || "—"}</p>
-                </div>
-              )}
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-primary">
+                  <Car size={16} aria-hidden="true" />
+                  Car pickup
+                </p>
+                {selectedBooking.pickup_requested ? (
+                  <>
+                    <p className="mt-2 text-sm font-semibold text-foreground">Requested — yes</p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {selectedBooking.pickup_details || "No extra details provided."}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-muted-foreground">Not requested</p>
+                )}
+              </div>
 
               {selectedBooking.special_requests && (
                 <div className="mx-auto mt-4 max-w-5xl rounded-lg bg-gray-50 p-4">

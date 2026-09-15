@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
   Car,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -36,10 +37,14 @@ function whatsappHref(raw) {
   return `https://wa.me/${digits.startsWith("0") ? `250${digits.slice(1)}` : digits}`;
 }
 
-export function BookingWizard({ listing, user, price }) {
+export function BookingWizard({ listing, user, price, fullscreen = false }) {
   const { t, fx, convertRoomAmount } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [stepDir, setStepDir] = useState("forward");
+  const [completedFlashStep, setCompletedFlashStep] = useState(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const celebrateTimer = useRef(null);
   const [form, setForm] = useState({
     check_in: "",
     check_out: "",
@@ -65,6 +70,12 @@ export function BookingWizard({ listing, user, price }) {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    };
+  }, []);
+
   const contactPhone = settingValue(settings, "contact_phone");
   const contactEmail = settingValue(settings, "contact_email");
   const contactWhatsapp =
@@ -82,10 +93,19 @@ export function BookingWizard({ listing, user, price }) {
   // Always charge / show the listed RWF nightly rate (never the USD display amount).
   const nightlyRwf = Number(listing?.price_daily ?? price ?? 0) || 0;
   const totalRwf = nights * nightlyRwf;
-  const totalUsd =
-    fx.ok && fx.rwfPerUsd ? convertRoomAmount(totalRwf, "USD") : null;
+  const totalUsd = fx.ok && fx.rwfPerUsd ? convertRoomAmount(totalRwf, "USD") : null;
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const minCheckout = form.check_in || today;
+
+  const flashCompleted = (fromStep) => {
+    setCompletedFlashStep(fromStep);
+    setCelebrate(true);
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    celebrateTimer.current = setTimeout(() => {
+      setCelebrate(false);
+      setCompletedFlashStep(null);
+    }, 900);
+  };
 
   const validateStep1 = () => {
     if (!form.check_in || !form.check_out) {
@@ -125,11 +145,14 @@ export function BookingWizard({ listing, user, price }) {
     setError("");
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
+    flashCompleted(step);
+    setStepDir("forward");
     setStep((s) => Math.min(3, s + 1));
   };
 
   const goBack = () => {
     setError("");
+    setStepDir("back");
     setStep((s) => Math.max(1, s - 1));
   };
 
@@ -157,9 +180,7 @@ export function BookingWizard({ listing, user, price }) {
 
   const goToLogin = () => {
     saveBookingDraft(listing.id, { step, form });
-    router.push(
-      `/login?next=${encodeURIComponent(bookingContinueUrl(loginReturnUrl))}`
-    );
+    router.push(`/login?next=${encodeURIComponent(bookingContinueUrl(loginReturnUrl))}`);
   };
 
   const handleSubmit = async (e) => {
@@ -205,6 +226,8 @@ export function BookingWizard({ listing, user, price }) {
         return;
       }
 
+      flashCompleted(3);
+
       if (form.payment_method === "mobile_money") {
         clearBookingDraft(listing.id);
         setPaymentOrder({
@@ -222,11 +245,23 @@ export function BookingWizard({ listing, user, price }) {
     }
   };
 
+  const stepAnimClass =
+    stepDir === "back" ? "booking-step-enter-back" : "booking-step-enter";
+
+  const fieldClass =
+    "min-h-14 rounded-xl border border-input bg-background px-4 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+
   if (paymentOrder) {
     return (
-      <div className="mt-5 space-y-4">
-        <BookingStepIndicator currentStep={3} />
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-800">
+      <div
+        className={`space-y-6 ${
+          fullscreen
+            ? "rounded-3xl border border-border bg-card p-6 shadow-smooth sm:p-10"
+            : "mt-5"
+        }`}
+      >
+        <BookingStepIndicator currentStep={3} completedFlashStep={3} />
+        <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-base font-semibold text-green-800">
           {success}
         </div>
         <PaymentMethodSelector
@@ -235,9 +270,9 @@ export function BookingWizard({ listing, user, price }) {
           readOnly
           compact
         />
-        <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-5">
-          <p className="flex items-center gap-2 text-sm font-bold text-primary">
-            <CreditCard size={16} />
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-6 sm:p-8">
+          <p className="flex items-center gap-2 text-base font-bold text-primary">
+            <CreditCard size={18} />
             {t("bookingStep3")}
           </p>
           <IntouchPayPaymentButton
@@ -252,288 +287,343 @@ export function BookingWizard({ listing, user, price }) {
           />
         </div>
         {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600">{error}</div>
+          <div className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">
+            {error}
+          </div>
         )}
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-5">
-      <div className="rounded-xl border border-border bg-gradient-to-b from-card to-muted/20 p-3 shadow-smooth sm:p-5">
-        <div className="mb-1 flex items-center gap-2">
-          <Sparkles className="text-secondary" size={18} />
-          <h3 className="font-extrabold">{t("requestBooking")}</h3>
-        </div>
+    <form
+      onSubmit={handleSubmit}
+      className={fullscreen ? "" : "mt-5"}
+      aria-labelledby="booking-wizard-title"
+    >
+      <div
+        className={`relative overflow-hidden border border-border bg-gradient-to-b from-card to-muted/20 shadow-smooth ${
+          fullscreen
+            ? "rounded-3xl p-5 sm:p-8 lg:p-12"
+            : "rounded-xl p-3 sm:p-5"
+        }`}
+      >
+        {celebrate && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center pt-4"
+            aria-live="polite"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground booking-check-pop shadow-smooth">
+              <CheckCircle2 size={16} aria-hidden="true" />
+              {t("bookingStepDone")}
+            </span>
+          </div>
+        )}
 
-        <BookingStepIndicator currentStep={step} />
+        <div className={`mb-2 flex items-center gap-3 ${fullscreen ? "mb-4" : ""}`}>
+          <Sparkles className="text-secondary" size={fullscreen ? 26 : 18} />
+          <h2
+            id="booking-wizard-title"
+            className={`font-extrabold ${fullscreen ? "text-2xl sm:text-3xl" : "text-base"}`}
+          >
+            {t("requestBooking")}
+          </h2>
+        </div>
+        {fullscreen && (
+          <p className="mb-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
+            {t("bookingFullscreenHint")}
+          </p>
+        )}
+
+        <BookingStepIndicator
+          currentStep={step}
+          completedFlashStep={completedFlashStep}
+        />
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600">
+          <div className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
             {error}
           </div>
         )}
         {success && !paymentOrder && (
-          <div className="mb-4 rounded-lg bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-700">
+          <div className="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
             {success}
           </div>
         )}
 
-        {/* Step 1 — Stay details */}
-        {step === 1 && (
-          <div key="step-1" className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
-            <p className="text-sm text-muted-foreground">{t("bookingStep1Hint")}</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-sm font-semibold">
-                {t("checkInLabel")}
-                <input
-                  type="date"
-                  required
-                  min={today}
-                  className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  value={form.check_in}
-                  onChange={(e) => setForm({ ...form, check_in: e.target.value })}
-                />
-              </label>
-              <label className="grid gap-1.5 text-sm font-semibold">
-                {t("checkOutLabel")}
-                <input
-                  type="date"
-                  required
-                  min={minCheckout}
-                  className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  value={form.check_out}
-                  onChange={(e) => setForm({ ...form, check_out: e.target.value })}
-                />
-              </label>
-            </div>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              {t("guestsField")}
-              <input
-                type="number"
-                min="1"
-                max={listing.capacity || 10}
-                className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                value={form.guests}
-                onChange={(e) => setForm({ ...form, guests: parseInt(e.target.value, 10) || 1 })}
-              />
-            </label>
-            {nights > 0 && (
-              <div className="rounded-lg bg-primary/5 px-4 py-3 text-sm">
-                <span className="text-muted-foreground">{t("bookingPreviewTotal")}: </span>
-                <span className="font-extrabold text-primary">
-                  {nights} {nights === 1 ? t("night") : t("nights")} · {formatMoney(totalRwf, "RWF")}
-                </span>
-                {totalUsd != null ? (
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                    ≈ {formatMoney(totalUsd, "USD")}
-                    {fx.rwfPerUsd
-                      ? ` · ${t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}`
-                      : ""}
-                  </p>
-                ) : null}
+        <div className="min-h-[22rem] sm:min-h-[24rem]">
+          {/* Step 1 — Stay details */}
+          {step === 1 && (
+            <div key="step-1" className={`space-y-6 ${stepAnimClass}`}>
+              <p className="text-base text-muted-foreground sm:text-lg">{t("bookingStep1Hint")}</p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                  {t("checkInLabel")}
+                  <input
+                    type="date"
+                    required
+                    min={today}
+                    className={fieldClass}
+                    value={form.check_in}
+                    onChange={(e) => setForm({ ...form, check_in: e.target.value })}
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                  {t("checkOutLabel")}
+                  <input
+                    type="date"
+                    required
+                    min={minCheckout}
+                    className={fieldClass}
+                    value={form.check_out}
+                    onChange={(e) => setForm({ ...form, check_out: e.target.value })}
+                  />
+                </label>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 2 — Guest details + car pickup */}
-        {step === 2 && (
-          <div key="step-2" className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
-            <p className="text-sm text-muted-foreground">{t("bookingStep2Hint")}</p>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              {t("contactPhoneLabel")}
-              <input
-                type="tel"
-                className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder="0781234567"
-                value={form.mobile_phone}
-                onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
-              />
-              <span className="text-xs font-normal text-muted-foreground">{t("contactPhoneHint")}</span>
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              {t("specialRequests")}
-              <textarea
-                className="min-h-24 rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder={t("specialRequestsPlaceholder")}
-                value={form.special_requests}
-                onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
-              />
-            </label>
-
-            <div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
-              <label className="flex cursor-pointer items-start gap-3">
+              <label className="grid max-w-xs gap-2 text-sm font-semibold sm:text-base">
+                {t("guestsField")}
                 <input
-                  type="checkbox"
-                  checked={form.pickup_requested}
+                  type="number"
+                  min="1"
+                  max={listing.capacity || 10}
+                  className={fieldClass}
+                  value={form.guests}
                   onChange={(e) =>
-                    setForm({ ...form, pickup_requested: e.target.checked })
+                    setForm({ ...form, guests: parseInt(e.target.value, 10) || 1 })
                   }
-                  className="mt-1"
                 />
-                <div className="flex-1">
-                  <p className="flex items-center gap-2 font-extrabold text-primary">
-                    <Car size={18} aria-hidden="true" />
-                    {t("pickupTitle")}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t("pickupHint")}</p>
-                </div>
               </label>
-              {form.pickup_requested && (
-                <div className="mt-4 space-y-3">
-                  <label className="grid gap-1.5 text-sm font-semibold">
-                    {t("pickupDetailsLabel")}
-                    <textarea
-                      value={form.pickup_details}
-                      onChange={(e) => setForm({ ...form, pickup_details: e.target.value })}
-                      className="min-h-24 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                      placeholder={t("pickupDetailsPlaceholder")}
-                      required
-                    />
-                  </label>
-                  <div className="rounded-lg border border-border bg-card p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {t("pickupContactTitle")}
+              {nights > 0 && (
+                <div className="rounded-2xl bg-primary/5 px-5 py-4 text-base">
+                  <span className="text-muted-foreground">{t("bookingPreviewTotal")}: </span>
+                  <span className="font-extrabold text-primary">
+                    {nights} {nights === 1 ? t("night") : t("nights")} ·{" "}
+                    {formatMoney(totalRwf, "RWF")}
+                  </span>
+                  {totalUsd != null ? (
+                    <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                      ≈ {formatMoney(totalUsd, "USD")}
+                      {fx.rwfPerUsd
+                        ? ` · ${t("fxLiveRate", {
+                            rate: Math.round(fx.rwfPerUsd).toLocaleString(),
+                          })}`
+                        : ""}
                     </p>
-                    <div className="mt-2 flex flex-col gap-2 text-sm">
-                      {primaryPhone ? (
-                        <a
-                          href={`tel:${digitsOnly(primaryPhone)}`}
-                          className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
-                        >
-                          <Phone size={15} /> {contactPhone}
-                        </a>
-                      ) : null}
-                      {contactWhatsapp ? (
-                        <a
-                          href={whatsappHref(contactWhatsapp)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 font-semibold text-emerald-700 hover:underline"
-                        >
-                          <MessageCircle size={15} /> {t("pickupWhatsapp")}: {contactWhatsapp}
-                        </a>
-                      ) : null}
-                      {contactEmail ? (
-                        <a
-                          href={`mailto:${contactEmail}`}
-                          className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
-                        >
-                          <Mail size={15} /> {contactEmail}
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
+                  ) : null}
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 3 — Review + payment */}
-        {step === 3 && (
-          <div key="step-3" className="space-y-5 animate-[fadeIn_0.25s_ease-out]">
-            <p className="text-sm text-muted-foreground">{t("bookingStep3Hint")}</p>
-
-            <div className="rounded-xl border border-border bg-background/80 p-4 text-sm">
-              <p className="mb-3 font-extrabold">{t("bookingSummary")}</p>
-              <dl className="grid gap-2">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{t("checkInLabel")}</dt>
-                  <dd className="font-semibold">{form.check_in}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{t("checkOutLabel")}</dt>
-                  <dd className="font-semibold">{form.check_out}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{t("guestsField")}</dt>
-                  <dd className="font-semibold">{form.guests}</dd>
-                </div>
-                {form.pickup_requested ? (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
-                    {t("pickupSelected")}
-                    {form.pickup_details ? (
-                      <p className="mt-1 whitespace-pre-wrap font-normal text-muted-foreground">
-                        {form.pickup_details}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="mt-2 flex justify-between gap-4 border-t border-border pt-2">
-                  <dt className="font-bold">{t("totalLabel")}</dt>
-                  <dd className="text-right">
-                    <p className="text-lg font-extrabold text-primary">{formatMoney(totalRwf, "RWF")}</p>
-                    {totalUsd != null ? (
-                      <p className="text-xs font-semibold text-muted-foreground">
-                        ≈ {formatMoney(totalUsd, "USD")}
-                      </p>
-                    ) : null}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <PaymentMethodSelector
-              value={form.payment_method}
-              onChange={(payment_method) => setForm({ ...form, payment_method })}
-            />
-
-            {form.payment_method === "mobile_money" && (
-              <label className="grid gap-1.5 text-sm font-semibold">
-                {t("mobileMoneyNumber")}
+          {/* Step 2 — Guest details + car pickup */}
+          {step === 2 && (
+            <div key="step-2" className={`space-y-6 ${stepAnimClass}`}>
+              <p className="text-base text-muted-foreground sm:text-lg">{t("bookingStep2Hint")}</p>
+              <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                {t("contactPhoneLabel")}
                 <input
                   type="tel"
-                  required
-                  className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className={fieldClass}
                   placeholder="0781234567"
                   value={form.mobile_phone}
                   onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
                 />
+                <span className="text-xs font-normal text-muted-foreground sm:text-sm">
+                  {t("contactPhoneHint")}
+                </span>
               </label>
-            )}
-          </div>
-        )}
+              <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                {t("specialRequests")}
+                <textarea
+                  className="min-h-32 rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  placeholder={t("specialRequestsPlaceholder")}
+                  value={form.special_requests}
+                  onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
+                />
+              </label>
+
+              <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 sm:p-6">
+                <label className="flex cursor-pointer items-start gap-4">
+                  <input
+                    type="checkbox"
+                    checked={form.pickup_requested}
+                    onChange={(e) =>
+                      setForm({ ...form, pickup_requested: e.target.checked })
+                    }
+                    className="mt-1.5 h-5 w-5"
+                  />
+                  <div className="flex-1">
+                    <p className="flex items-center gap-2 text-lg font-extrabold text-primary">
+                      <Car size={22} aria-hidden="true" />
+                      {t("pickupTitle")}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+                      {t("pickupHint")}
+                    </p>
+                  </div>
+                </label>
+                {form.pickup_requested && (
+                  <div className="mt-5 space-y-4 booking-step-enter">
+                    <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                      {t("pickupDetailsLabel")}
+                      <textarea
+                        value={form.pickup_details}
+                        onChange={(e) =>
+                          setForm({ ...form, pickup_details: e.target.value })
+                        }
+                        className="min-h-32 rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary"
+                        placeholder={t("pickupDetailsPlaceholder")}
+                        required
+                      />
+                    </label>
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {t("pickupContactTitle")}
+                      </p>
+                      <div className="mt-3 flex flex-col gap-3 text-base">
+                        {primaryPhone ? (
+                          <a
+                            href={`tel:${digitsOnly(primaryPhone)}`}
+                            className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
+                          >
+                            <Phone size={18} /> {contactPhone}
+                          </a>
+                        ) : null}
+                        {contactWhatsapp ? (
+                          <a
+                            href={whatsappHref(contactWhatsapp)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 font-semibold text-emerald-700 hover:underline"
+                          >
+                            <MessageCircle size={18} /> {t("pickupWhatsapp")}:{" "}
+                            {contactWhatsapp}
+                          </a>
+                        ) : null}
+                        {contactEmail ? (
+                          <a
+                            href={`mailto:${contactEmail}`}
+                            className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
+                          >
+                            <Mail size={18} /> {contactEmail}
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Review + payment */}
+          {step === 3 && (
+            <div key="step-3" className={`space-y-6 ${stepAnimClass}`}>
+              <p className="text-base text-muted-foreground sm:text-lg">{t("bookingStep3Hint")}</p>
+
+              <div className="rounded-2xl border border-border bg-background/80 p-5 text-base sm:p-6">
+                <p className="mb-4 text-lg font-extrabold">{t("bookingSummary")}</p>
+                <dl className="grid gap-3">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{t("checkInLabel")}</dt>
+                    <dd className="font-semibold">{form.check_in}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{t("checkOutLabel")}</dt>
+                    <dd className="font-semibold">{form.check_out}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{t("guestsField")}</dt>
+                    <dd className="font-semibold">{form.guests}</dd>
+                  </div>
+                  {form.pickup_requested ? (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+                      {t("pickupSelected")}
+                      {form.pickup_details ? (
+                        <p className="mt-1 whitespace-pre-wrap font-normal text-muted-foreground">
+                          {form.pickup_details}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div className="mt-2 flex justify-between gap-4 border-t border-border pt-3">
+                    <dt className="font-bold">{t("totalLabel")}</dt>
+                    <dd className="text-right">
+                      <p className="text-2xl font-extrabold text-primary">
+                        {formatMoney(totalRwf, "RWF")}
+                      </p>
+                      {totalUsd != null ? (
+                        <p className="text-sm font-semibold text-muted-foreground">
+                          ≈ {formatMoney(totalUsd, "USD")}
+                        </p>
+                      ) : null}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <PaymentMethodSelector
+                value={form.payment_method}
+                onChange={(payment_method) => setForm({ ...form, payment_method })}
+              />
+
+              {form.payment_method === "mobile_money" && (
+                <label className="grid gap-2 text-sm font-semibold sm:text-base">
+                  {t("mobileMoneyNumber")}
+                  <input
+                    type="tel"
+                    required
+                    className={fieldClass}
+                    placeholder="0781234567"
+                    value={form.mobile_phone}
+                    onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
+                  />
+                </label>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Navigation */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {step > 1 && (
+        <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          {step > 1 ? (
             <button
               type="button"
               onClick={goBack}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-border bg-background px-4 text-sm font-bold hover:bg-muted/50 sm:w-auto sm:px-6"
+              className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 text-base font-bold hover:bg-muted/50 sm:w-auto"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
               {t("back")}
             </button>
+          ) : (
+            <span className="hidden sm:block" />
           )}
 
           {step < 3 ? (
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex min-h-11 w-full flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-4 text-sm font-extrabold text-primary-foreground sm:w-auto sm:px-6"
+              className="inline-flex min-h-14 w-full flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-8 text-base font-extrabold text-primary-foreground sm:max-w-xs sm:flex-none"
             >
               {t("continue")}
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           ) : !user ? (
             <button
               type="button"
               onClick={goToLogin}
-              className="inline-flex min-h-11 w-full flex-1 items-center justify-center gap-2 rounded-lg bg-secondary px-4 text-sm font-extrabold text-secondary-foreground sm:w-auto sm:px-6"
+              className="inline-flex min-h-14 w-full flex-1 items-center justify-center gap-2 rounded-xl bg-secondary px-8 text-base font-extrabold text-secondary-foreground sm:max-w-md sm:flex-none"
             >
-              <CalendarCheck size={16} />
+              <CalendarCheck size={20} />
               {t("signInToBook")}
             </button>
           ) : (
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex min-h-11 w-full flex-1 items-center justify-center gap-2 rounded-lg bg-secondary px-4 text-sm font-extrabold text-secondary-foreground disabled:opacity-60 sm:w-auto sm:px-6"
+              className="inline-flex min-h-14 w-full flex-1 items-center justify-center gap-2 rounded-xl bg-secondary px-8 text-base font-extrabold text-secondary-foreground disabled:opacity-60 sm:max-w-md sm:flex-none"
             >
-              <CalendarCheck size={16} />
+              <CalendarCheck size={20} />
               {submitting
                 ? t("processing")
                 : form.payment_method === "mobile_money"
@@ -544,7 +634,7 @@ export function BookingWizard({ listing, user, price }) {
         </div>
 
         {!user && step === 3 && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">{t("roomBookGuest")}</p>
+          <p className="mt-4 text-center text-sm text-muted-foreground">{t("roomBookGuest")}</p>
         )}
       </div>
     </form>

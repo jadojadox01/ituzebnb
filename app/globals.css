@@ -114,6 +114,100 @@ svg {
   }
 }
 
+@keyframes bookingStepIn {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bookingStepInBack {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bookingCheckPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bookingPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px hsl(var(--primary) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+}
+
+@keyframes bookingProgressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes bookingCompleteFlash {
+  0% {
+    background-color: hsl(var(--primary) / 0);
+  }
+  35% {
+    background-color: hsl(var(--primary) / 0.12);
+  }
+  100% {
+    background-color: hsl(var(--primary) / 0);
+  }
+}
+
+.booking-step-enter {
+  animation: bookingStepIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.booking-step-enter-back {
+  animation: bookingStepInBack 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.booking-check-pop {
+  animation: bookingCheckPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.booking-pulse-ring {
+  animation: bookingPulseRing 0.7s ease-out;
+}
+
+.booking-progress-fill {
+  transform-origin: left center;
+  animation: bookingProgressFill 0.45s ease-out both;
+}
+
+.booking-complete-flash {
+  animation: bookingCompleteFlash 0.65s ease-out;
+}
+
 /* Prevent long unbroken strings from blowing out layouts */
 .break-safe {
   overflow-wrap: anywhere;

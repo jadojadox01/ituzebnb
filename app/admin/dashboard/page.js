@@ -1,36 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BedDouble, CalendarCheck, DollarSign, Mail, Users } from "lucide-react";
+import { BedDouble, CalendarCheck, Car, DollarSign, Mail, Users } from "lucide-react";
 import Link from "next/link";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ rooms: 0, bookings: 0, users: 0, revenue: 0, newMessages: 0 });
+  const [stats, setStats] = useState({
+    rooms: 0,
+    bookings: 0,
+    users: 0,
+    revenue: 0,
+    newMessages: 0,
+    pickups: 0,
+  });
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentMessages, setRecentMessages] = useState([]);
   const [siteName, setSiteName] = useState(DEFAULT_SITE_NAME);
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((d) => {
-      if (d.settings) setSiteName(settingValue(d.settings, "site_name"));
-    });
-    fetch("/api/rooms").then((r) => r.json()).then((d) => {
-      if (d.rooms) setStats((s) => ({ ...s, rooms: d.rooms.length }));
-    });
-    fetch("/api/bookings").then((r) => r.json()).then((d) => {
-      if (d.bookings) {
-        setRecentBookings(d.bookings.slice(0, 5));
-        setStats((s) => ({
-          ...s,
-          bookings: d.bookings.length,
-          revenue: d.bookings.reduce(
-            (sum, b) => sum + (b.payment_status === "paid" ? b.total_amount : 0),
-            0
-          ),
-        }));
-      }
-    });
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) setSiteName(settingValue(d.settings, "site_name"));
+      });
+    fetch("/api/rooms")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.rooms) setStats((s) => ({ ...s, rooms: d.rooms.length }));
+      });
+    fetch("/api/bookings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.bookings) {
+          setRecentBookings(d.bookings.slice(0, 5));
+          setStats((s) => ({
+            ...s,
+            bookings: d.bookings.length,
+            pickups: d.bookings.filter((b) => b.pickup_requested).length,
+            revenue: d.bookings.reduce(
+              (sum, b) => sum + (b.payment_status === "paid" ? b.total_amount : 0),
+              0
+            ),
+          }));
+        }
+      });
     fetch("/api/users")
       .then((r) => r.json())
       .then((d) => {
@@ -56,9 +70,34 @@ export default function AdminDashboard() {
 
   const cards = [
     { label: "Total Rooms", value: stats.rooms, icon: BedDouble, color: "bg-blue-500", href: "/admin/rooms" },
-    { label: "Total Bookings", value: stats.bookings, icon: CalendarCheck, color: "bg-green-500", href: "/admin/bookings" },
-    { label: "Revenue", value: `RWF ${stats.revenue.toLocaleString()}`, icon: DollarSign, color: "bg-yellow-500", href: "/admin/bookings" },
-    { label: "New Messages", value: stats.newMessages, icon: Mail, color: "bg-indigo-500", href: "/admin/messages" },
+    {
+      label: "Total Bookings",
+      value: stats.bookings,
+      icon: CalendarCheck,
+      color: "bg-green-500",
+      href: "/admin/bookings",
+    },
+    {
+      label: "Pickup requests",
+      value: stats.pickups,
+      icon: Car,
+      color: "bg-teal-500",
+      href: "/admin/bookings",
+    },
+    {
+      label: "Revenue",
+      value: `RWF ${stats.revenue.toLocaleString()}`,
+      icon: DollarSign,
+      color: "bg-yellow-500",
+      href: "/admin/bookings",
+    },
+    {
+      label: "New Messages",
+      value: stats.newMessages,
+      icon: Mail,
+      color: "bg-indigo-500",
+      href: "/admin/messages",
+    },
     { label: "Users", value: stats.users || "—", icon: Users, color: "bg-purple-500", href: "/admin/users" },
   ];
 
@@ -66,14 +105,14 @@ export default function AdminDashboard() {
     <div>
       <h1 className="text-2xl font-extrabold">{siteName} — Dashboard</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Overview of rooms, bookings, messages, and revenue. Edit site text in{" "}
+        Overview of rooms, bookings, pickup requests, messages, and revenue. Edit site text in{" "}
         <Link href="/admin/settings" className="font-bold text-primary hover:underline">
           Settings
         </Link>
         .
       </p>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -111,13 +150,14 @@ export default function AdminDashboard() {
                   <th className="px-4 py-3 font-semibold">Booking ID</th>
                   <th className="px-4 py-3 font-semibold">Guest</th>
                   <th className="px-4 py-3 font-semibold">Room</th>
+                  <th className="px-4 py-3 font-semibold">Pickup</th>
                   <th className="px-4 py-3 font-semibold">Payment</th>
                 </tr>
               </thead>
               <tbody>
                 {recentBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                       No bookings yet.
                     </td>
                   </tr>
@@ -127,6 +167,19 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 font-mono text-xs">{b.booking_id}</td>
                       <td className="px-4 py-3">{b.user?.name || b.user_name || "—"}</td>
                       <td className="px-4 py-3">{b.room?.title || b.room_title || "—"}</td>
+                      <td className="px-4 py-3">
+                        {b.pickup_requested ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
+                            title={b.pickup_details || "Car pickup requested"}
+                          >
+                            <Car size={12} aria-hidden="true" />
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${
