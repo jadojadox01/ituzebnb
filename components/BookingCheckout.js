@@ -30,7 +30,7 @@ function whatsappHref(raw) {
 }
 
 export function BookingCheckout({ room, searchParams, user }) {
-  const { t, currency, displayNightly, fx } = useTranslation();
+  const { t, currency, fx, convertRoomAmount } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
@@ -66,25 +66,26 @@ export function BookingCheckout({ room, searchParams, user }) {
 
   const pricing = useMemo(() => {
     const nights = Number(room.nights) || 1;
-    const useUsd = currency === "USD" && fx.ok;
-    const pricePerNight = useUsd
-      ? displayNightly(room, "USD")
-      : Number(room.price_daily) || 0;
-    const subtotal = useUsd && pricePerNight != null
-      ? pricePerNight * nights
-      : Number(room.subtotal) || 0;
-    const taxAmount = useUsd ? 0 : Number(room.taxAmount) || 0;
-    const total = useUsd ? subtotal + taxAmount : Number(room.total) || 0;
+    const pricePerNightRwf = Number(room.price_daily) || 0;
+    const subtotalRwf = Number(room.subtotal) || pricePerNightRwf * nights;
+    const taxAmountRwf = Number(room.taxAmount) || 0;
+    const totalRwf = Number(room.total) || subtotalRwf + taxAmountRwf;
+    const pricePerNightUsd = fx.ok ? convertRoomAmount(pricePerNightRwf, "USD") : null;
+    const subtotalUsd = fx.ok ? convertRoomAmount(subtotalRwf, "USD") : null;
+    const taxAmountUsd = fx.ok ? convertRoomAmount(taxAmountRwf, "USD") : null;
+    const totalUsd = fx.ok ? convertRoomAmount(totalRwf, "USD") : null;
     return {
       nights,
-      subtotal,
-      taxAmount,
-      total,
-      pricePerNight: pricePerNight ?? 0,
-      payableRwf: Number(room.total) || 0,
-      displayCurrency: useUsd ? "USD" : "RWF",
+      pricePerNightRwf,
+      subtotalRwf,
+      taxAmountRwf,
+      totalRwf,
+      pricePerNightUsd,
+      subtotalUsd,
+      taxAmountUsd,
+      totalUsd,
     };
-  }, [room, currency, fx.ok, displayNightly]);
+  }, [room, fx.ok, convertRoomAmount]);
 
   const validateGuest = () => {
     const name = sanitizeText(form.guest_name, { maxLength: 120 });
@@ -461,28 +462,51 @@ export function BookingCheckout({ room, searchParams, user }) {
           ) : null}
           <div className="flex justify-between border-t border-border pt-2">
             <dt>{t("widgetPerNight")}</dt>
-            <dd>{formatMoney(pricing.pricePerNight, pricing.displayCurrency)}</dd>
+            <dd className="text-right">
+              <p className="font-semibold">{formatMoney(pricing.pricePerNightRwf, "RWF")}</p>
+              {pricing.pricePerNightUsd != null ? (
+                <p className="text-xs text-muted-foreground">≈ {formatMoney(pricing.pricePerNightUsd, "USD")}</p>
+              ) : null}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt>{t("widgetNights", { count: pricing.nights })}</dt>
-            <dd>{formatMoney(pricing.subtotal, pricing.displayCurrency)}</dd>
+            <dd className="text-right">
+              <p className="font-semibold">{formatMoney(pricing.subtotalRwf, "RWF")}</p>
+              {pricing.subtotalUsd != null ? (
+                <p className="text-xs text-muted-foreground">≈ {formatMoney(pricing.subtotalUsd, "USD")}</p>
+              ) : null}
+            </dd>
           </div>
-          {pricing.taxAmount > 0 && (
+          {pricing.taxAmountRwf > 0 && (
             <div className="flex justify-between">
               <dt>{t("widgetTaxes")}</dt>
-              <dd>{formatMoney(pricing.taxAmount, pricing.displayCurrency)}</dd>
+              <dd className="text-right">
+                <p className="font-semibold">{formatMoney(pricing.taxAmountRwf, "RWF")}</p>
+                {pricing.taxAmountUsd != null ? (
+                  <p className="text-xs text-muted-foreground">≈ {formatMoney(pricing.taxAmountUsd, "USD")}</p>
+                ) : null}
+              </dd>
             </div>
           )}
           <div className="flex justify-between border-t border-border pt-2 text-base font-extrabold">
             <dt>{t("widgetTotal")}</dt>
-            <dd className="text-primary">{formatMoney(pricing.total, pricing.displayCurrency)}</dd>
+            <dd className="text-right">
+              <p className="text-primary">{formatMoney(pricing.totalRwf, "RWF")}</p>
+              {pricing.totalUsd != null ? (
+                <p className="text-xs font-semibold text-muted-foreground">
+                  ≈ {formatMoney(pricing.totalUsd, "USD")}
+                </p>
+              ) : null}
+            </dd>
           </div>
-          {pricing.displayCurrency === "USD" ? (
+          {fx.rwfPerUsd ? (
             <p className="pt-1 text-xs text-muted-foreground">
-              {t("paymentAlwaysRwf")}: {formatMoney(pricing.payableRwf, "RWF")}
-              {fx.rwfPerUsd ? ` · ${t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}` : ""}
+              {t("paymentAlwaysRwf")} · {t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}
             </p>
-          ) : null}
+          ) : (
+            <p className="pt-1 text-xs text-muted-foreground">{t("paymentAlwaysRwf")}</p>
+          )}
         </dl>
       </aside>
     </div>

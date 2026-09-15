@@ -154,7 +154,7 @@ export default function HouseDetailsPage() {
                   <BookingWidget variant="compact" roomId={listing.id} />
                 </div>
                 <div className="mt-5 border-t border-border pt-5">
-                  <BookingWizard listing={listing} user={user} price={price} />
+                  <BookingWizard listing={listing} user={user} price={Number(listing.price_daily) || 0} />
                 </div>
               </>
             )}

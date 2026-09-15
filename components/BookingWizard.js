@@ -19,13 +19,10 @@ import {
   loadBookingDraft,
   saveBookingDraft,
 } from "@/lib/bookingDraft";
-
-function formatRwf(amount) {
-  return `RWF ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)}`;
-}
+import { formatMoney } from "@/lib/roomUtils";
 
 export function BookingWizard({ listing, user, price }) {
-  const { t } = useTranslation();
+  const { t, fx, convertRoomAmount } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -49,7 +46,11 @@ export function BookingWizard({ listing, user, price }) {
     return Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
   }, [form.check_in, form.check_out]);
 
-  const totalAmount = nights * (price || 0);
+  // Always charge / show the listed RWF nightly rate (never the USD display amount).
+  const nightlyRwf = Number(listing?.price_daily ?? price ?? 0) || 0;
+  const totalRwf = nights * nightlyRwf;
+  const totalUsd =
+    fx.ok && fx.rwfPerUsd ? convertRoomAmount(totalRwf, "USD") : null;
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const minCheckout = form.check_in || today;
 
@@ -146,7 +147,7 @@ export function BookingWizard({ listing, user, price }) {
           room_id: listing.id,
           check_in: form.check_in,
           check_out: form.check_out,
-          total_amount: totalAmount,
+          total_amount: totalRwf,
           guests: form.guests,
           special_requests: form.special_requests,
           payment_method: form.payment_method,
@@ -275,8 +276,16 @@ export function BookingWizard({ listing, user, price }) {
               <div className="rounded-lg bg-primary/5 px-4 py-3 text-sm">
                 <span className="text-muted-foreground">{t("bookingPreviewTotal")}: </span>
                 <span className="font-extrabold text-primary">
-                  {nights} {nights === 1 ? t("night") : t("nights")} · {formatRwf(totalAmount)}
+                  {nights} {nights === 1 ? t("night") : t("nights")} · {formatMoney(totalRwf, "RWF")}
                 </span>
+                {totalUsd != null ? (
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                    ≈ {formatMoney(totalUsd, "USD")}
+                    {fx.rwfPerUsd
+                      ? ` · ${t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}`
+                      : ""}
+                  </p>
+                ) : null}
               </div>
             )}
           </div>
@@ -331,7 +340,14 @@ export function BookingWizard({ listing, user, price }) {
                 </div>
                 <div className="mt-2 flex justify-between gap-4 border-t border-border pt-2">
                   <dt className="font-bold">{t("totalLabel")}</dt>
-                  <dd className="text-lg font-extrabold text-primary">{formatRwf(totalAmount)}</dd>
+                  <dd className="text-right">
+                    <p className="text-lg font-extrabold text-primary">{formatMoney(totalRwf, "RWF")}</p>
+                    {totalUsd != null ? (
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        ≈ {formatMoney(totalUsd, "USD")}
+                      </p>
+                    ) : null}
+                  </dd>
                 </div>
               </dl>
             </div>
