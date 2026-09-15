@@ -4,9 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
+  Car,
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Mail,
+  MessageCircle,
+  Phone,
   Sparkles,
 } from "lucide-react";
 import { BookingStepIndicator } from "@/components/BookingStepIndicator";
@@ -20,6 +24,17 @@ import {
   saveBookingDraft,
 } from "@/lib/bookingDraft";
 import { formatMoney } from "@/lib/roomUtils";
+import { settingValue } from "@/lib/siteDefaults";
+
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function whatsappHref(raw) {
+  const digits = digitsOnly(raw);
+  if (!digits) return "";
+  return `https://wa.me/${digits.startsWith("0") ? `250${digits.slice(1)}` : digits}`;
+}
 
 export function BookingWizard({ listing, user, price }) {
   const { t, fx, convertRoomAmount } = useTranslation();
@@ -30,6 +45,8 @@ export function BookingWizard({ listing, user, price }) {
     check_out: "",
     guests: 1,
     special_requests: "",
+    pickup_requested: false,
+    pickup_details: "",
     mobile_phone: user?.phone || "",
     payment_method: "mobile_money",
   });
@@ -37,6 +54,22 @@ export function BookingWizard({ listing, user, price }) {
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [paymentOrder, setPaymentOrder] = useState(null);
+  const [settings, setSettings] = useState({});
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) setSettings(d.settings);
+      })
+      .catch(() => {});
+  }, []);
+
+  const contactPhone = settingValue(settings, "contact_phone");
+  const contactEmail = settingValue(settings, "contact_email");
+  const contactWhatsapp =
+    settingValue(settings, "contact_whatsapp") || contactPhone.split(",")[0]?.trim() || "";
+  const primaryPhone = contactPhone.split(",")[0]?.trim() || "";
 
   const nights = useMemo(() => {
     if (!form.check_in || !form.check_out) return 0;
@@ -68,6 +101,14 @@ export function BookingWizard({ listing, user, price }) {
     return true;
   };
 
+  const validateStep2 = () => {
+    if (form.pickup_requested && !String(form.pickup_details || "").trim()) {
+      setError(t("pickupDetailsRequired"));
+      return false;
+    }
+    return true;
+  };
+
   const validateStep3 = () => {
     if (form.payment_method === "bank_card") {
       setError(t("bookingCardUnavailable"));
@@ -83,6 +124,7 @@ export function BookingWizard({ listing, user, price }) {
   const goNext = () => {
     setError("");
     if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep2()) return;
     setStep((s) => Math.min(3, s + 1));
   };
 
@@ -136,7 +178,7 @@ export function BookingWizard({ listing, user, price }) {
       return;
     }
 
-    if (!validateStep1() || !validateStep3()) return;
+    if (!validateStep1() || !validateStep2() || !validateStep3()) return;
 
     setSubmitting(true);
     try {
@@ -150,6 +192,10 @@ export function BookingWizard({ listing, user, price }) {
           total_amount: totalRwf,
           guests: form.guests,
           special_requests: form.special_requests,
+          pickup_requested: Boolean(form.pickup_requested),
+          pickup_details: form.pickup_requested
+            ? String(form.pickup_details || "").trim()
+            : "",
           payment_method: form.payment_method,
         }),
       });
@@ -291,7 +337,7 @@ export function BookingWizard({ listing, user, price }) {
           </div>
         )}
 
-        {/* Step 2 — Guest details */}
+        {/* Step 2 — Guest details + car pickup */}
         {step === 2 && (
           <div key="step-2" className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
             <p className="text-sm text-muted-foreground">{t("bookingStep2Hint")}</p>
@@ -315,6 +361,73 @@ export function BookingWizard({ listing, user, price }) {
                 onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
               />
             </label>
+
+            <div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.pickup_requested}
+                  onChange={(e) =>
+                    setForm({ ...form, pickup_requested: e.target.checked })
+                  }
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <p className="flex items-center gap-2 font-extrabold text-primary">
+                    <Car size={18} aria-hidden="true" />
+                    {t("pickupTitle")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("pickupHint")}</p>
+                </div>
+              </label>
+              {form.pickup_requested && (
+                <div className="mt-4 space-y-3">
+                  <label className="grid gap-1.5 text-sm font-semibold">
+                    {t("pickupDetailsLabel")}
+                    <textarea
+                      value={form.pickup_details}
+                      onChange={(e) => setForm({ ...form, pickup_details: e.target.value })}
+                      className="min-h-24 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      placeholder={t("pickupDetailsPlaceholder")}
+                      required
+                    />
+                  </label>
+                  <div className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      {t("pickupContactTitle")}
+                    </p>
+                    <div className="mt-2 flex flex-col gap-2 text-sm">
+                      {primaryPhone ? (
+                        <a
+                          href={`tel:${digitsOnly(primaryPhone)}`}
+                          className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
+                        >
+                          <Phone size={15} /> {contactPhone}
+                        </a>
+                      ) : null}
+                      {contactWhatsapp ? (
+                        <a
+                          href={whatsappHref(contactWhatsapp)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 font-semibold text-emerald-700 hover:underline"
+                        >
+                          <MessageCircle size={15} /> {t("pickupWhatsapp")}: {contactWhatsapp}
+                        </a>
+                      ) : null}
+                      {contactEmail ? (
+                        <a
+                          href={`mailto:${contactEmail}`}
+                          className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
+                        >
+                          <Mail size={15} /> {contactEmail}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -338,6 +451,16 @@ export function BookingWizard({ listing, user, price }) {
                   <dt className="text-muted-foreground">{t("guestsField")}</dt>
                   <dd className="font-semibold">{form.guests}</dd>
                 </div>
+                {form.pickup_requested ? (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+                    {t("pickupSelected")}
+                    {form.pickup_details ? (
+                      <p className="mt-1 whitespace-pre-wrap font-normal text-muted-foreground">
+                        {form.pickup_details}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="mt-2 flex justify-between gap-4 border-t border-border pt-2">
                   <dt className="font-bold">{t("totalLabel")}</dt>
                   <dd className="text-right">
