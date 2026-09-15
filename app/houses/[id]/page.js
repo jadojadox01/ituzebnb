@@ -12,7 +12,6 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useTranslation } from "@/lib/TranslationContext";
 import { tRoomType, tStatus } from "@/lib/i18n";
 import { formatMoney } from "@/lib/roomUtils";
-import { getMonthlyPrice, getNightlyPrice } from "@/lib/currency";
 
 function normalizeImages(images) {
   if (Array.isArray(images) && images.length > 0) return images;
@@ -21,7 +20,7 @@ function normalizeImages(images) {
 }
 
 export default function HouseDetailsPage() {
-  const { t, currency } = useTranslation();
+  const { t, currency, displayNightly, displayMonthly, fx } = useTranslation();
   const params = useParams();
   const [listing, setListing] = useState(null);
   const [user, setUser] = useState(null);
@@ -78,8 +77,10 @@ export default function HouseDetailsPage() {
   const bedrooms = listing.bedrooms || listing.beds || 1;
   const bathrooms = listing.bathrooms || 1;
   const address = listing.address || listing.location || "Kigali, Rwanda";
-  const price = getNightlyPrice(listing, currency);
-  const monthly = getMonthlyPrice(listing, currency);
+  const useUsd = currency === "USD" && fx.ok;
+  const price = useUsd ? displayNightly(listing, "USD") : Number(listing.price_daily) || 0;
+  const monthly = useUsd ? displayMonthly(listing, "USD") : Number(listing.price_monthly) || 0;
+  const displayCurrency = useUsd ? "USD" : "RWF";
   const roomType = listing.type || listing.room_type || "Room";
 
   return (
@@ -116,10 +117,15 @@ export default function HouseDetailsPage() {
 
           <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-smooth sm:p-5 lg:sticky lg:top-24">
             <p className="text-sm font-bold text-muted-foreground">{t("roomDailyRate")}</p>
-            <p className="mt-1 text-3xl font-extrabold text-primary">{formatMoney(price, currency)}</p>
+            <p className="mt-1 text-3xl font-extrabold text-primary">{formatMoney(price || 0, displayCurrency)}</p>
             {monthly > 0 && (
-              <p className="text-sm text-muted-foreground">{t("roomMonthly")} {formatMoney(monthly, currency)}</p>
+              <p className="text-sm text-muted-foreground">{t("roomMonthly")} {formatMoney(monthly, displayCurrency)}</p>
             )}
+            {useUsd && fx.rwfPerUsd ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}
+              </p>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted p-4">

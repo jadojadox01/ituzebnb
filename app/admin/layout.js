@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, BedDouble, CalendarCheck, Settings, ImagePlus, LogOut, Menu, X, Home, CreditCard, Users, Mail, CalendarX
+  LayoutDashboard, BedDouble, CalendarCheck, Settings, ImagePlus, LogOut, Menu, X, Home, Users, Mail, CalendarX
 } from "lucide-react";
 import { DEFAULT_SITE_NAME } from "@/lib/siteDefaults";
 
@@ -17,7 +17,6 @@ const sidebarLinks = [
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },
   { label: "Hero Section", href: "/admin/hero-ads", icon: ImagePlus },
-  { label: "Payments", href: "/admin/payments", icon: CreditCard },
 ];
 
 export default function AdminLayout({ children }) {

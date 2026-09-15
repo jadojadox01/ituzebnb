@@ -95,8 +95,8 @@ export default function AdminRooms() {
       video_url: form.video_url || "",
     };
 
-    if (!payload.price_daily && !payload.price_daily_usd) {
-      setError("Set at least a daily price in RWF or USD.");
+    if (!payload.price_daily) {
+      setError("Set a daily price in RWF.");
       setSaving(false);
       return;
     }
@@ -254,26 +254,18 @@ export default function AdminRooms() {
             </label>
 
             <div className="rounded-xl border border-border bg-muted/30 p-4 sm:col-span-2 lg:col-span-3">
-              <p className="text-sm font-extrabold text-primary">Nightly & monthly rates</p>
+              <p className="text-sm font-extrabold text-primary">Nightly & monthly rates (RWF)</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Guests can switch RWF / USD on the site. Mobile Money checkout always uses the RWF nightly rate.
+                Enter prices in RWF. Guests can switch to USD on the site using a live exchange rate from open.er-api.com (not estimates). Mobile Money checkout always charges RWF.
               </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1.5 text-sm font-semibold">
                   Daily (RWF)
-                  <input type="number" min="0" step="100" className="min-h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.price_daily} onChange={(e) => setForm({ ...form, price_daily: e.target.value })} />
+                  <input type="number" min="0" step="100" className="min-h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.price_daily} onChange={(e) => setForm({ ...form, price_daily: e.target.value })} required />
                 </label>
                 <label className="grid gap-1.5 text-sm font-semibold">
                   Monthly (RWF)
                   <input type="number" min="0" step="100" className="min-h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: e.target.value })} />
-                </label>
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Daily (USD)
-                  <input type="number" min="0" step="0.01" className="min-h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.price_daily_usd} onChange={(e) => setForm({ ...form, price_daily_usd: e.target.value })} />
-                </label>
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Monthly (USD)
-                  <input type="number" min="0" step="0.01" className="min-h-10 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-primary" value={form.price_monthly_usd} onChange={(e) => setForm({ ...form, price_monthly_usd: e.target.value })} />
                 </label>
               </div>
             </div>
@@ -379,7 +371,6 @@ export default function AdminRooms() {
               <th className="px-4 py-3 font-semibold">Title</th>
               <th className="px-4 py-3 font-semibold">Type</th>
               <th className="px-4 py-3 font-semibold">RWF / night</th>
-              <th className="px-4 py-3 font-semibold">USD / night</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Actions</th>
             </tr>
@@ -387,7 +378,7 @@ export default function AdminRooms() {
           <tbody>
             {rooms.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                   No rooms found. Add your first room!
                 </td>
               </tr>
@@ -397,7 +388,6 @@ export default function AdminRooms() {
                   <td className="px-4 py-3 font-medium">{room.title}</td>
                   <td className="px-4 py-3 capitalize">{room.room_type}</td>
                   <td className="px-4 py-3">{formatMoney(room.price_daily, "RWF")}</td>
-                  <td className="px-4 py-3">{room.price_daily_usd ? formatMoney(room.price_daily_usd, "USD") : "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${statusColors[room.status] || "bg-gray-100"}`}>
                       {room.status}

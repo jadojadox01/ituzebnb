@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Bath, BedDouble, CalendarCheck, MapPin, Users } from "lucide-react";
 import { useState } from "react";
 import { formatMoney, isRoomBookable, normalizeRoomForCard } from "@/lib/roomUtils";
-import { getNightlyPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/TranslationContext";
 import { tRoomType, tStatus } from "@/lib/i18n";
 
@@ -16,13 +15,14 @@ const statusStyles = {
 };
 
 export function PropertyCard({ listing }) {
-  const { t, currency } = useTranslation();
+  const { t, currency, displayNightly, fx } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const room = normalizeRoomForCard(listing);
   const imageUrl = room.images[0];
   const statusKey = String(room.status || "available").toLowerCase();
   const canBook = isRoomBookable(room.status);
-  const nightly = getNightlyPrice(room, currency);
+  const nightly = displayNightly(room, currency);
+  const showUsd = currency === "USD" && nightly != null && fx.ok;
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-smooth">
@@ -90,7 +90,9 @@ export function PropertyCard({ listing }) {
             <span className="flex items-center gap-1.5"><Users size={16} />{room.capacity}</span>
           </div>
           <div className="text-left sm:text-right">
-            <p className="text-lg font-bold text-primary">{formatMoney(nightly, currency)}</p>
+            <p className="text-lg font-bold text-primary">
+              {showUsd ? formatMoney(nightly, "USD") : formatMoney(room.price_daily, "RWF")}
+            </p>
             <p className="text-xs text-muted-foreground">{t("perNight")}</p>
           </div>
         </div>

@@ -16,7 +16,6 @@ import { IntouchPayPaymentButton } from "@/components/IntouchPayPaymentButton";
 import { COUNTRIES } from "@/components/BookingWidget";
 import { useTranslation } from "@/lib/TranslationContext";
 import { formatMoney } from "@/lib/roomUtils";
-import { getNightlyPrice } from "@/lib/currency";
 import { sanitizeEmail, sanitizePhone, sanitizeText } from "@/lib/sanitizeInput";
 import { settingValue } from "@/lib/siteDefaults";
 
@@ -31,7 +30,7 @@ function whatsappHref(raw) {
 }
 
 export function BookingCheckout({ room, searchParams, user }) {
-  const { t, currency } = useTranslation();
+  const { t, currency, displayNightly, fx } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
@@ -67,21 +66,25 @@ export function BookingCheckout({ room, searchParams, user }) {
 
   const pricing = useMemo(() => {
     const nights = Number(room.nights) || 1;
-    const pricePerNight = getNightlyPrice(room, currency);
-    const hasUsd = Number(room.price_daily_usd) > 0;
-    const useDisplay = currency === "USD" && hasUsd;
-    const subtotal = useDisplay ? pricePerNight * nights : Number(room.subtotal) || 0;
-    const taxAmount = useDisplay ? 0 : Number(room.taxAmount) || 0;
-    const total = useDisplay ? subtotal + taxAmount : Number(room.total) || 0;
+    const useUsd = currency === "USD" && fx.ok;
+    const pricePerNight = useUsd
+      ? displayNightly(room, "USD")
+      : Number(room.price_daily) || 0;
+    const subtotal = useUsd && pricePerNight != null
+      ? pricePerNight * nights
+      : Number(room.subtotal) || 0;
+    const taxAmount = useUsd ? 0 : Number(room.taxAmount) || 0;
+    const total = useUsd ? subtotal + taxAmount : Number(room.total) || 0;
     return {
       nights,
       subtotal,
       taxAmount,
       total,
-      pricePerNight,
+      pricePerNight: pricePerNight ?? 0,
       payableRwf: Number(room.total) || 0,
+      displayCurrency: useUsd ? "USD" : "RWF",
     };
-  }, [room, currency]);
+  }, [room, currency, fx.ok, displayNightly]);
 
   const validateGuest = () => {
     const name = sanitizeText(form.guest_name, { maxLength: 120 });
@@ -458,25 +461,26 @@ export function BookingCheckout({ room, searchParams, user }) {
           ) : null}
           <div className="flex justify-between border-t border-border pt-2">
             <dt>{t("widgetPerNight")}</dt>
-            <dd>{formatMoney(pricing.pricePerNight, currency)}</dd>
+            <dd>{formatMoney(pricing.pricePerNight, pricing.displayCurrency)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>{t("widgetNights", { count: pricing.nights })}</dt>
-            <dd>{formatMoney(pricing.subtotal, currency)}</dd>
+            <dd>{formatMoney(pricing.subtotal, pricing.displayCurrency)}</dd>
           </div>
           {pricing.taxAmount > 0 && (
             <div className="flex justify-between">
               <dt>{t("widgetTaxes")}</dt>
-              <dd>{formatMoney(pricing.taxAmount, currency)}</dd>
+              <dd>{formatMoney(pricing.taxAmount, pricing.displayCurrency)}</dd>
             </div>
           )}
           <div className="flex justify-between border-t border-border pt-2 text-base font-extrabold">
             <dt>{t("widgetTotal")}</dt>
-            <dd className="text-primary">{formatMoney(pricing.total, currency)}</dd>
+            <dd className="text-primary">{formatMoney(pricing.total, pricing.displayCurrency)}</dd>
           </div>
-          {currency === "USD" ? (
+          {pricing.displayCurrency === "USD" ? (
             <p className="pt-1 text-xs text-muted-foreground">
               {t("paymentAlwaysRwf")}: {formatMoney(pricing.payableRwf, "RWF")}
+              {fx.rwfPerUsd ? ` · ${t("fxLiveRate", { rate: Math.round(fx.rwfPerUsd).toLocaleString() })}` : ""}
             </p>
           ) : null}
         </dl>

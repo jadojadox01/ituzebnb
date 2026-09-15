@@ -5,11 +5,10 @@ import Link from "next/link";
 import { Bath, BedDouble, MapPin, Users } from "lucide-react";
 import { useTranslation } from "@/lib/TranslationContext";
 import { formatMoney } from "@/lib/roomUtils";
-import { getNightlyPrice } from "@/lib/currency";
 import { tRoomType } from "@/lib/i18n";
 
 function RoomCard({ room, searchParams, onSelect }) {
-  const { t, currency } = useTranslation();
+  const { t, currency, displayNightly, fx } = useTranslation();
   const image = room.images?.[0] || "/images/background1.jpeg";
   const qs = new URLSearchParams({
     check_in: String(searchParams?.check_in || ""),
@@ -20,12 +19,12 @@ function RoomCard({ room, searchParams, onSelect }) {
     room_id: String(room.id),
   }).toString();
   const nights = Number(room.nights) || 1;
-  const nightly = getNightlyPrice(room, currency);
-  const hasUsd = Number(room.price_daily_usd) > 0;
-  const useUsd = currency === "USD" && hasUsd;
-  const subtotal = useUsd ? nightly * nights : room.subtotal;
+  const useUsd = currency === "USD" && fx.ok;
+  const nightly = useUsd ? displayNightly(room, "USD") : Number(room.price_daily) || 0;
+  const subtotal = useUsd && nightly != null ? nightly * nights : room.subtotal;
   const taxAmount = useUsd ? 0 : room.taxAmount;
-  const total = useUsd ? subtotal : room.total;
+  const total = useUsd && nightly != null ? subtotal : room.total;
+  const displayCurrency = useUsd ? "USD" : "RWF";
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md">
@@ -47,7 +46,7 @@ function RoomCard({ room, searchParams, onSelect }) {
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">{t("widgetPerNight")}</p>
-            <p className="text-lg font-extrabold text-primary">{formatMoney(nightly, currency)}</p>
+            <p className="text-lg font-extrabold text-primary">{formatMoney(nightly || 0, displayCurrency)}</p>
           </div>
         </div>
 
@@ -67,17 +66,17 @@ function RoomCard({ room, searchParams, onSelect }) {
         <div className="mt-4 rounded-xl bg-muted/50 p-3 text-sm">
           <div className="flex justify-between">
             <span>{t("widgetNights", { count: nights })}</span>
-            <span>{formatMoney(subtotal, currency)}</span>
+            <span>{formatMoney(subtotal || 0, displayCurrency)}</span>
           </div>
           {taxAmount > 0 && (
             <div className="mt-1 flex justify-between text-muted-foreground">
               <span>{t("widgetTaxes")}</span>
-              <span>{formatMoney(taxAmount, currency)}</span>
+              <span>{formatMoney(taxAmount, displayCurrency)}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 font-bold">
             <span>{t("widgetTotal")}</span>
-            <span className="text-primary">{formatMoney(total, currency)}</span>
+            <span className="text-primary">{formatMoney(total || 0, displayCurrency)}</span>
           </div>
         </div>
 

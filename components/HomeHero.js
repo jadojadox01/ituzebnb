@@ -6,13 +6,12 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CalendarCheck, Sparkles } from "lucide-react";
 import { BookingWidget } from "@/components/BookingWidget";
 import { collectHeroSlides, formatMoney } from "@/lib/roomUtils";
-import { getNightlyPrice } from "@/lib/currency";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 import { localizedSetting } from "@/lib/i18n";
 import { useTranslation } from "@/lib/TranslationContext";
 
 export default function HomeHero({ settings, rooms, availableCount, totalCount }) {
-  const { t, language, currency } = useTranslation();
+  const { t, language, currency, displayNightly, fx } = useTranslation();
   const [slides, setSlides] = useState([]);
   const [index, setIndex] = useState(0);
 
@@ -44,11 +43,14 @@ export default function HomeHero({ settings, rooms, availableCount, totalCount }
   const heroLink = current?.link || "/houses";
 
   const availableRooms = (rooms || []).filter((r) => String(r.status || "").toLowerCase() === "available");
-  const startingPrice = availableRooms.length
-    ? Math.min(...availableRooms.map((r) => getNightlyPrice(r, currency) || Infinity))
-    : null;
+  const nightlyValues = availableRooms
+    .map((r) => displayNightly(r, currency))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  const startingPrice = nightlyValues.length ? Math.min(...nightlyValues) : null;
   const displayStarting =
-    startingPrice && Number.isFinite(startingPrice) ? formatMoney(startingPrice, currency) : "—";
+    startingPrice != null
+      ? formatMoney(startingPrice, currency === "USD" && fx.ok ? "USD" : "RWF")
+      : "—";
 
   return (
     <section className="relative overflow-hidden border-b border-primary/10">
