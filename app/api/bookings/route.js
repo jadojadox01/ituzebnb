@@ -89,9 +89,22 @@ export async function POST(request) {
     const guestPhone = sanitizePhone(data.guest_phone || "");
     const guestCountry = sanitizeText(data.guest_country || "", { maxLength: 60 });
     const specialRequests = sanitizeText(data.special_requests || "", { maxLength: 1000 });
+    const pickupRequested = Boolean(data.pickup_requested);
+    const pickupDetails = pickupRequested
+      ? sanitizeText(data.pickup_details || "", { maxLength: 500 })
+      : "";
+    const displayCurrency =
+      String(data.display_currency || "RWF").toUpperCase() === "USD" ? "USD" : "RWF";
 
     if (!guestName || !guestEmail) {
       return NextResponse.json({ error: "Guest name and email are required" }, { status: 400 });
+    }
+
+    if (pickupRequested && !pickupDetails) {
+      return NextResponse.json(
+        { error: "Please add pickup details (airport, flight, or meeting point)." },
+        { status: 400 }
+      );
     }
 
     const bookingId = "BKG-" + uuidv4().slice(0, 8).toUpperCase();
@@ -105,6 +118,7 @@ export async function POST(request) {
         total_amount: pricing.total,
         subtotal_amount: pricing.subtotal,
         tax_amount: pricing.taxAmount,
+        display_currency: displayCurrency,
         status: "pending",
         payment_status: "unpaid",
         guests,
@@ -116,6 +130,8 @@ export async function POST(request) {
         guest_phone: guestPhone,
         guest_country: guestCountry,
         special_requests: specialRequests,
+        pickup_requested: pickupRequested,
+        pickup_details: pickupDetails,
         payment_method: data.payment_method === "mobile_money" ? "mobile_money" : "",
       },
       include: {
@@ -154,6 +170,9 @@ export async function POST(request) {
         checkOut: booking.check_out,
         amount: booking.total_amount,
         guests: booking.guests,
+        pickupRequested: booking.pickup_requested,
+        pickupDetails: booking.pickup_details,
+        specialRequests: booking.special_requests,
       });
     }
 

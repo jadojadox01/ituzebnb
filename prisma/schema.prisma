@@ -20,25 +20,27 @@ model User {
 }
 
 model Room {
-  id           Int       @id @default(autoincrement())
-  title        String
-  room_type    String
-  price_daily  Float
-  price_monthly Float   @default(0)
-  currency     String    @default("RWF")
-  status       String    @default("available")
-  description  String    @default("")
-  beds         Int       @default(1)
-  bathrooms    Int       @default(1)
-  location     String    @default("")
-  capacity     Int       @default(1)
-  amenities    String    @default("")
-  images       String    @default("")
-  video_url    String    @default("")
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  bookings     Booking[]
-  blocked_dates BlockedDate[]
+  id               Int       @id @default(autoincrement())
+  title            String
+  room_type        String
+  price_daily      Float
+  price_monthly    Float     @default(0)
+  price_daily_usd  Float     @default(0)
+  price_monthly_usd Float    @default(0)
+  currency         String    @default("RWF")
+  status           String    @default("available")
+  description      String    @default("")
+  beds             Int       @default(1)
+  bathrooms        Int       @default(1)
+  location         String    @default("")
+  capacity         Int       @default(1)
+  amenities        String    @default("")
+  images           String    @default("")
+  video_url        String    @default("")
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  bookings         Booking[]
+  blocked_dates    BlockedDate[]
 }
 
 model Booking {
@@ -51,6 +53,7 @@ model Booking {
   total_amount     Float
   subtotal_amount  Float     @default(0)
   tax_amount       Float     @default(0)
+  display_currency String    @default("RWF")
   status           String    @default("pending")
   payment_status   String    @default("unpaid")
   payment_method   String    @default("")
@@ -64,11 +67,13 @@ model Booking {
   guest_phone      String    @default("")
   guest_country    String    @default("")
   special_requests String    @default("")
+  pickup_requested Boolean   @default(false)
+  pickup_details   String    @default("")
   checked_in_at    DateTime?
   checked_out_at   DateTime?
   created_at       DateTime  @default(now())
   user             User      @relation(fields: [user_id], references: [id])
-  room             Room      @relation(fields: [room_id], references: [id])
+  room             Room      @relation(fields: [room_id], references: [id], onDelete: Restrict)
 }
 
 model BlockedDate {

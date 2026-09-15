@@ -11,10 +11,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useTranslation } from "@/lib/TranslationContext";
 import { tRoomType, tStatus } from "@/lib/i18n";
-
-function formatRwf(amount) {
-  return `RWF ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)}`;
-}
+import { formatMoney } from "@/lib/roomUtils";
+import { getMonthlyPrice, getNightlyPrice } from "@/lib/currency";
 
 function normalizeImages(images) {
   if (Array.isArray(images) && images.length > 0) return images;
@@ -23,7 +21,7 @@ function normalizeImages(images) {
 }
 
 export default function HouseDetailsPage() {
-  const { t } = useTranslation();
+  const { t, currency } = useTranslation();
   const params = useParams();
   const [listing, setListing] = useState(null);
   const [user, setUser] = useState(null);
@@ -80,7 +78,8 @@ export default function HouseDetailsPage() {
   const bedrooms = listing.bedrooms || listing.beds || 1;
   const bathrooms = listing.bathrooms || 1;
   const address = listing.address || listing.location || "Kigali, Rwanda";
-  const price = listing.price || listing.price_daily || 0;
+  const price = getNightlyPrice(listing, currency);
+  const monthly = getMonthlyPrice(listing, currency);
   const roomType = listing.type || listing.room_type || "Room";
 
   return (
@@ -115,11 +114,11 @@ export default function HouseDetailsPage() {
             </div>
           </div>
 
-          <aside className="h-fit rounded-lg border border-border bg-card p-4 shadow-smooth sm:p-5 lg:sticky lg:top-24">
+          <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-smooth sm:p-5 lg:sticky lg:top-24">
             <p className="text-sm font-bold text-muted-foreground">{t("roomDailyRate")}</p>
-            <p className="mt-1 text-3xl font-extrabold text-primary">{formatRwf(price)}</p>
-            {listing.price_monthly > 0 && (
-              <p className="text-sm text-muted-foreground">{t("roomMonthly")} {formatRwf(listing.price_monthly)}</p>
+            <p className="mt-1 text-3xl font-extrabold text-primary">{formatMoney(price, currency)}</p>
+            {monthly > 0 && (
+              <p className="text-sm text-muted-foreground">{t("roomMonthly")} {formatMoney(monthly, currency)}</p>
             )}
 
             <div className="mt-5 grid grid-cols-2 gap-3">

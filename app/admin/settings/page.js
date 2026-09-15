@@ -112,6 +112,7 @@ export default function AdminSettings() {
             {field("contact_heading", "Contact heading")}
             {field("contact_subtitle", "Contact subtitle", "textarea", 2)}
             {field("contact_phone", "Phone")}
+            {field("contact_whatsapp", "WhatsApp number")}
             {field("contact_email", "Email")}
             {field("contact_address", "Address")}
           </div>

@@ -5,13 +5,14 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowRight, CalendarCheck, Sparkles } from "lucide-react";
 import { BookingWidget } from "@/components/BookingWidget";
-import { collectHeroSlides, formatRwf } from "@/lib/roomUtils";
+import { collectHeroSlides, formatMoney } from "@/lib/roomUtils";
+import { getNightlyPrice } from "@/lib/currency";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 import { localizedSetting } from "@/lib/i18n";
 import { useTranslation } from "@/lib/TranslationContext";
 
-export default function HomeHero({ settings, rooms, availableCount, totalCount, startingPrice }) {
-  const { t, language } = useTranslation();
+export default function HomeHero({ settings, rooms, availableCount, totalCount }) {
+  const { t, language, currency } = useTranslation();
   const [slides, setSlides] = useState([]);
   const [index, setIndex] = useState(0);
 
@@ -41,6 +42,13 @@ export default function HomeHero({ settings, rooms, availableCount, totalCount, 
   const heroTitle = current?.title || fallbackTitle;
   const heroSubtitle = current?.subtitle || fallbackSubtitle;
   const heroLink = current?.link || "/houses";
+
+  const availableRooms = (rooms || []).filter((r) => String(r.status || "").toLowerCase() === "available");
+  const startingPrice = availableRooms.length
+    ? Math.min(...availableRooms.map((r) => getNightlyPrice(r, currency) || Infinity))
+    : null;
+  const displayStarting =
+    startingPrice && Number.isFinite(startingPrice) ? formatMoney(startingPrice, currency) : "—";
 
   return (
     <section className="relative overflow-hidden border-b border-primary/10">
@@ -109,7 +117,7 @@ export default function HomeHero({ settings, rooms, availableCount, totalCount, 
               <p className="text-[10px] leading-tight text-white/75 sm:text-xs">{t("heroTotalListings")}</p>
             </div>
             <div className="rounded-xl border border-white/15 bg-white/10 p-2.5 backdrop-blur-md sm:rounded-2xl sm:p-3">
-              <p className="break-safe text-xs font-bold leading-snug sm:text-sm">{startingPrice ? formatRwf(startingPrice) : "—"}</p>
+              <p className="break-safe text-xs font-bold leading-snug sm:text-sm">{displayStarting}</p>
               <p className="text-[10px] leading-tight text-white/75 sm:text-xs">{t("heroFromNight")}</p>
             </div>
           </div>

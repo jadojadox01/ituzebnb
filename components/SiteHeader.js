@@ -5,6 +5,7 @@ import { Menu, UserPlus, X, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/TranslationContext";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { CurrencySwitch } from "@/components/CurrencySwitch";
 import { SiteLogo } from "@/components/SiteLogo";
 
 export function SiteHeader() {
@@ -56,6 +57,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <CurrencySwitch />
           <LanguageSwitch />
           {user ? (
             <>

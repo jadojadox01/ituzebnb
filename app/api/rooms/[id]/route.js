@@ -85,13 +85,52 @@ export async function DELETE(request, { params }) {
     await requireAdmin();
     const { id } = await params;
     const roomId = parseInt(id, 10);
-    const existing = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!Number.isFinite(roomId)) {
+      return NextResponse.json({ error: "Invalid room id" }, { status: 400 });
+    }
+
+    const existing = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: { _count: { select: { bookings: true } } },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
-    await prisma.room.delete({ where: { id: roomId } });
-    return NextResponse.json({ success: true });
+
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get("force") === "1";
+    const bookingCount = existing._count.bookings;
+
+    if (bookingCount > 0 && !force) {
+      return NextResponse.json(
+        {
+          error: `This room has ${bookingCount} booking(s). Confirm force delete to remove the room and its bookings.`,
+          bookingCount,
+          requiresForce: true,
+        },
+        { status: 409 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (bookingCount > 0) {
+        await tx.booking.deleteMany({ where: { room_id: roomId } });
+      }
+      await tx.room.delete({ where: { id: roomId } });
+    });
+
+    return NextResponse.json({ success: true, deletedBookings: bookingCount });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: errorStatus(error) });
+    const message = String(error?.message || "Could not delete room");
+    if (/Foreign key constraint|P2003/i.test(message)) {
+      return NextResponse.json(
+        {
+          error: "Could not delete room because related records still reference it. Try force delete.",
+          requiresForce: true,
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: message }, { status: errorStatus(error) });
   }
 }

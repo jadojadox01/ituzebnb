@@ -1,22 +1,44 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, CreditCard, User } from "lucide-react";
+import {
+  Car,
+  CheckCircle2,
+  ChevronLeft,
+  CreditCard,
+  Mail,
+  MessageCircle,
+  Phone,
+  User,
+} from "lucide-react";
 import { IntouchPayPaymentButton } from "@/components/IntouchPayPaymentButton";
 import { COUNTRIES } from "@/components/BookingWidget";
 import { useTranslation } from "@/lib/TranslationContext";
-import { formatRwf } from "@/lib/roomUtils";
+import { formatMoney } from "@/lib/roomUtils";
+import { getNightlyPrice } from "@/lib/currency";
 import { sanitizeEmail, sanitizePhone, sanitizeText } from "@/lib/sanitizeInput";
+import { settingValue } from "@/lib/siteDefaults";
+
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function whatsappHref(raw) {
+  const digits = digitsOnly(raw);
+  if (!digits) return "";
+  return `https://wa.me/${digits.startsWith("0") ? `250${digits.slice(1)}` : digits}`;
+}
 
 export function BookingCheckout({ room, searchParams, user }) {
-  const { t } = useTranslation();
+  const { t, currency } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [paymentOrder, setPaymentOrder] = useState(null);
+  const [settings, setSettings] = useState({});
 
   const [form, setForm] = useState({
     guest_name: user?.name || "",
@@ -24,20 +46,42 @@ export function BookingCheckout({ room, searchParams, user }) {
     guest_phone: user?.phone || "",
     guest_country: "Rwanda",
     special_requests: "",
+    pickup_requested: false,
+    pickup_details: "",
     payment_method: "pay_later",
     mobile_phone: user?.phone || "",
   });
 
-  const pricing = useMemo(
-    () => ({
-      nights: room.nights,
-      subtotal: room.subtotal,
-      taxAmount: room.taxAmount,
-      total: room.total,
-      pricePerNight: room.price_daily,
-    }),
-    [room]
-  );
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) setSettings(d.settings);
+      })
+      .catch(() => {});
+  }, []);
+
+  const contactPhone = settingValue(settings, "contact_phone");
+  const contactEmail = settingValue(settings, "contact_email");
+  const contactWhatsapp = settingValue(settings, "contact_whatsapp") || contactPhone.split(",")[0]?.trim() || "";
+
+  const pricing = useMemo(() => {
+    const nights = Number(room.nights) || 1;
+    const pricePerNight = getNightlyPrice(room, currency);
+    const hasUsd = Number(room.price_daily_usd) > 0;
+    const useDisplay = currency === "USD" && hasUsd;
+    const subtotal = useDisplay ? pricePerNight * nights : Number(room.subtotal) || 0;
+    const taxAmount = useDisplay ? 0 : Number(room.taxAmount) || 0;
+    const total = useDisplay ? subtotal + taxAmount : Number(room.total) || 0;
+    return {
+      nights,
+      subtotal,
+      taxAmount,
+      total,
+      pricePerNight,
+      payableRwf: Number(room.total) || 0,
+    };
+  }, [room, currency]);
 
   const validateGuest = () => {
     const name = sanitizeText(form.guest_name, { maxLength: 120 });
@@ -53,6 +97,10 @@ export function BookingCheckout({ room, searchParams, user }) {
     }
     if (!phone) {
       setError(t("widgetPhoneRequired"));
+      return false;
+    }
+    if (form.pickup_requested && !sanitizeText(form.pickup_details, { maxLength: 500 })) {
+      setError(t("pickupDetailsRequired"));
       return false;
     }
     return true;
@@ -86,6 +134,11 @@ export function BookingCheckout({ room, searchParams, user }) {
           guest_phone: sanitizePhone(form.guest_phone),
           guest_country: sanitizeText(form.guest_country, { maxLength: 60 }),
           special_requests: sanitizeText(form.special_requests, { maxLength: 1000 }),
+          pickup_requested: Boolean(form.pickup_requested),
+          pickup_details: form.pickup_requested
+            ? sanitizeText(form.pickup_details, { maxLength: 500 })
+            : "",
+          display_currency: currency,
           payment_method: form.payment_method === "mobile_money" ? "mobile_money" : "",
           pay_later: form.payment_method === "pay_later",
         }),
@@ -130,7 +183,7 @@ export function BookingCheckout({ room, searchParams, user }) {
         <button
           type="button"
           onClick={() => router.push("/my-bookings")}
-          className="focus-ring mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground"
+          className="focus-ring mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground"
         >
           {t("viewMyBookings")}
         </button>
@@ -140,7 +193,7 @@ export function BookingCheckout({ room, searchParams, user }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-smooth">
         {step === 1 && (
           <>
             <div className="mb-4 flex items-center gap-2">
@@ -159,7 +212,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                   placeholder={t("widgetNamePlaceholder")}
                   value={form.guest_name}
                   onChange={(e) => setForm({ ...form, guest_name: e.target.value })}
-                  className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
+                  className="min-h-11 rounded-xl border border-input px-3 text-sm outline-none focus:border-primary"
                 />
               </label>
               <label className="grid gap-1.5">
@@ -171,7 +224,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                   placeholder={t("widgetEmailPlaceholder")}
                   value={form.guest_email}
                   onChange={(e) => setForm({ ...form, guest_email: e.target.value })}
-                  className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
+                  className="min-h-11 rounded-xl border border-input px-3 text-sm outline-none focus:border-primary"
                 />
               </label>
               <label className="grid gap-1.5">
@@ -183,7 +236,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                   placeholder={t("widgetPhonePlaceholder")}
                   value={form.guest_phone}
                   onChange={(e) => setForm({ ...form, guest_phone: e.target.value })}
-                  className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
+                  className="min-h-11 rounded-xl border border-input px-3 text-sm outline-none focus:border-primary"
                 />
               </label>
               <label className="grid gap-1.5 sm:col-span-2">
@@ -191,7 +244,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                 <select
                   value={form.guest_country}
                   onChange={(e) => setForm({ ...form, guest_country: e.target.value })}
-                  className="min-h-11 rounded-lg border border-input px-3 text-sm outline-none focus:border-primary"
+                  className="min-h-11 rounded-xl border border-input px-3 text-sm outline-none focus:border-primary"
                 >
                   {COUNTRIES.map((c) => (
                     <option key={c} value={c}>
@@ -205,18 +258,80 @@ export function BookingCheckout({ room, searchParams, user }) {
                 <textarea
                   value={form.special_requests}
                   onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
-                  className="min-h-24 rounded-lg border border-input px-3 py-2 text-sm outline-none focus:border-primary"
+                  className="min-h-24 rounded-xl border border-input px-3 py-2 text-sm outline-none focus:border-primary"
                   placeholder={t("widgetSpecialRequestsPlaceholder")}
                 />
               </label>
             </div>
+
+            <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.pickup_requested}
+                  onChange={(e) =>
+                    setForm({ ...form, pickup_requested: e.target.checked })
+                  }
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <p className="flex items-center gap-2 font-extrabold text-primary">
+                    <Car size={18} aria-hidden="true" />
+                    {t("pickupTitle")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("pickupHint")}</p>
+                </div>
+              </label>
+              {form.pickup_requested && (
+                <div className="mt-4 space-y-3">
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-bold">{t("pickupDetailsLabel")}</span>
+                    <textarea
+                      value={form.pickup_details}
+                      onChange={(e) => setForm({ ...form, pickup_details: e.target.value })}
+                      className="min-h-24 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      placeholder={t("pickupDetailsPlaceholder")}
+                      required
+                    />
+                  </label>
+                  <div className="rounded-xl border border-border bg-card p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      {t("pickupContactTitle")}
+                    </p>
+                    <div className="mt-2 flex flex-col gap-2 text-sm">
+                      {contactPhone ? (
+                        <a href={`tel:${digitsOnly(contactPhone.split(",")[0])}`} className="inline-flex items-center gap-2 font-semibold text-primary hover:underline">
+                          <Phone size={15} /> {contactPhone}
+                        </a>
+                      ) : null}
+                      {contactWhatsapp ? (
+                        <a
+                          href={whatsappHref(contactWhatsapp)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 font-semibold text-emerald-700 hover:underline"
+                        >
+                          <MessageCircle size={15} /> {t("pickupWhatsapp")}: {contactWhatsapp}
+                        </a>
+                      ) : null}
+                      {contactEmail ? (
+                        <a href={`mailto:${contactEmail}`} className="inline-flex items-center gap-2 font-semibold text-primary hover:underline">
+                          <Mail size={15} /> {contactEmail}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={() => {
                 setError("");
                 if (validateGuest()) setStep(2);
               }}
-              className="focus-ring mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
+              className="focus-ring mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
             >
               {t("continue")}
             </button>
@@ -265,7 +380,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                       value={form.mobile_phone}
                       onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
                       placeholder={t("widgetMomoPlaceholder")}
-                      className="mt-3 min-h-10 w-full rounded-lg border border-input px-3 text-sm"
+                      className="mt-3 min-h-10 w-full rounded-xl border border-input px-3 text-sm"
                     />
                   )}
                 </div>
@@ -275,7 +390,7 @@ export function BookingCheckout({ room, searchParams, user }) {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-lg border border-border text-sm font-bold"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-border text-sm font-bold"
               >
                 <ChevronLeft size={16} /> {t("back")}
               </button>
@@ -283,7 +398,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                 type="button"
                 disabled={submitting}
                 onClick={handleSubmit}
-                className="inline-flex min-h-11 flex-[2] items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-60"
+                className="inline-flex min-h-11 flex-[2] items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground disabled:opacity-60"
               >
                 {submitting ? t("contactSending") : t("confirmBooking")}
               </button>
@@ -299,6 +414,7 @@ export function BookingCheckout({ room, searchParams, user }) {
                 {typeof error === "string" ? error : error.error || t("paymentFailed")}
               </p>
             )}
+            <p className="mb-3 text-xs text-muted-foreground">{t("paymentAlwaysRwf")}</p>
             <IntouchPayPaymentButton
               orderId={paymentOrder.orderId}
               amount={paymentOrder.amount}
@@ -314,7 +430,7 @@ export function BookingCheckout({ room, searchParams, user }) {
         )}
       </div>
 
-      <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-smooth">
         <h3 className="text-lg font-extrabold">{t("bookingSummary")}</h3>
         <p className="mt-1 text-sm font-semibold text-primary">{room.title}</p>
         <dl className="mt-4 space-y-2 text-sm">
@@ -335,24 +451,34 @@ export function BookingCheckout({ room, searchParams, user }) {
                 : ""}
             </dd>
           </div>
+          {form.pickup_requested ? (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+              {t("pickupSelected")}
+            </div>
+          ) : null}
           <div className="flex justify-between border-t border-border pt-2">
             <dt>{t("widgetPerNight")}</dt>
-            <dd>{formatRwf(pricing.pricePerNight)}</dd>
+            <dd>{formatMoney(pricing.pricePerNight, currency)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>{t("widgetNights", { count: pricing.nights })}</dt>
-            <dd>{formatRwf(pricing.subtotal)}</dd>
+            <dd>{formatMoney(pricing.subtotal, currency)}</dd>
           </div>
           {pricing.taxAmount > 0 && (
             <div className="flex justify-between">
               <dt>{t("widgetTaxes")}</dt>
-              <dd>{formatRwf(pricing.taxAmount)}</dd>
+              <dd>{formatMoney(pricing.taxAmount, currency)}</dd>
             </div>
           )}
           <div className="flex justify-between border-t border-border pt-2 text-base font-extrabold">
             <dt>{t("widgetTotal")}</dt>
-            <dd className="text-primary">{formatRwf(pricing.total)}</dd>
+            <dd className="text-primary">{formatMoney(pricing.total, currency)}</dd>
           </div>
+          {currency === "USD" ? (
+            <p className="pt-1 text-xs text-muted-foreground">
+              {t("paymentAlwaysRwf")}: {formatMoney(pricing.payableRwf, "RWF")}
+            </p>
+          ) : null}
         </dl>
       </aside>
     </div>

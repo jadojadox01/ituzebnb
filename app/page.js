@@ -14,10 +14,11 @@ import HomeHero from "@/components/HomeHero";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { formatRwf, isRoomBookable, normalizeRoomForCard } from "@/lib/roomUtils";
+import { isRoomBookable, normalizeRoomForCard } from "@/lib/roomUtils";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 import { localizedSetting } from "@/lib/i18n";
 import { useTranslation } from "@/lib/TranslationContext";
+import { CurrencySwitch } from "@/components/CurrencySwitch";
 
 export default function HomePage() {
   const { t, language } = useTranslation();
@@ -39,9 +40,6 @@ export default function HomePage() {
 
   const availableRooms = rooms.filter((r) => isRoomBookable(r.status));
   const featuredRooms = availableRooms.slice(0, 6);
-  const startingPrice = availableRooms.length
-    ? Math.min(...availableRooms.map((r) => r.price_daily || 0))
-    : null;
 
   const siteName = settingValue(settings, "site_name") || DEFAULT_SITE_NAME;
   const siteDescription = localizedSetting(settings, "site_description", language, t);
@@ -69,7 +67,6 @@ export default function HomePage() {
         rooms={rooms}
         availableCount={availableRooms.length}
         totalCount={rooms.length}
-        startingPrice={startingPrice}
       />
 
       <section id="rooms" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
@@ -82,13 +79,16 @@ export default function HomePage() {
             <h2 className="mt-2 text-2xl font-bold break-safe sm:text-4xl">{t("homeRoomsAt", { name: siteName })}</h2>
             <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">{roomsSectionSubtitle}</p>
           </div>
-          <Link
-            href="/houses"
-            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/20 px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/5 sm:w-auto"
-          >
-            {t("homeViewAllRooms")}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+            <CurrencySwitch />
+            <Link
+              href="/houses"
+              className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/20 px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/5 sm:w-auto"
+            >
+              {t("homeViewAllRooms")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
         {loading ? (

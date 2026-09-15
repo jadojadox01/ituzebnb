@@ -473,6 +473,13 @@ export default function AdminBookings() {
                 </div>
               </div>
 
+              {selectedBooking.pickup_requested && (
+                <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-bold text-primary">Car pickup requested</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{selectedBooking.pickup_details || "—"}</p>
+                </div>
+              )}
+
               {selectedBooking.special_requests && (
                 <div className="mx-auto mt-4 max-w-5xl rounded-lg bg-gray-50 p-4">
                   <h3 className="text-sm font-bold uppercase text-muted-foreground">Special Requests</h3>

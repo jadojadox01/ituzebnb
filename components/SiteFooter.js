@@ -1,20 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useTranslation } from "@/lib/TranslationContext";
 import { SiteLogo } from "@/components/SiteLogo";
 import { DEFAULT_SITE_NAME, settingValue } from "@/lib/siteDefaults";
 
 import { localizedSetting } from "@/lib/i18n";
 
+function whatsappHref(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  return `https://wa.me/${digits.startsWith("0") ? `250${digits.slice(1)}` : digits}`;
+}
+
 export function SiteFooter({ settings = {} }) {
   const { t, language } = useTranslation();
   const siteDescription =
     localizedSetting(settings, "site_description", language, t) || t("siteTagline");
-  const phone = settings.contact_phone;
-  const email = settings.contact_email;
-  const address = settings.contact_address;
+  const phone = settingValue(settings, "contact_phone");
+  const email = settingValue(settings, "contact_email");
+  const address = settingValue(settings, "contact_address");
+  const whatsapp = settingValue(settings, "contact_whatsapp") || phone.split(",")[0]?.trim() || "";
   const copyright =
     localizedSetting(settings, "footer_copyright", language, t) ||
     t("footerCopyright").replace("ITUZE B&B", settingValue(settings, "site_name") || DEFAULT_SITE_NAME);
@@ -52,10 +59,24 @@ export function SiteFooter({ settings = {} }) {
               <p className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {address}</p>
             ) : null}
             {phone ? (
-              <p className="flex items-start gap-2"><Phone size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {phone}</p>
+              <a href={`tel:${String(phone).replace(/\D/g, "").slice(0, 15)}`} className="flex items-start gap-2 transition hover:text-secondary">
+                <Phone size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {phone}
+              </a>
+            ) : null}
+            {whatsapp ? (
+              <a
+                href={whatsappHref(whatsapp)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-2 transition hover:text-secondary"
+              >
+                <MessageCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> WhatsApp: {whatsapp}
+              </a>
             ) : null}
             {email ? (
-              <p className="flex items-start gap-2"><Mail size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {email}</p>
+              <a href={`mailto:${email}`} className="flex items-start gap-2 transition hover:text-secondary">
+                <Mail size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {email}
+              </a>
             ) : null}
             {!address && !phone && !email ? (
               <p className="text-white/60">{t("footerContactMissing")}</p>
